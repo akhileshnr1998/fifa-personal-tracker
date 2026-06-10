@@ -6,6 +6,7 @@ import type { Fixture } from './types';
 interface MatchCardProps {
   fixture: Fixture;
   followedTeams?: string[];
+  id?: string;
 }
 
 function isFollowedMatch(
@@ -18,11 +19,12 @@ function isFollowedMatch(
   );
 }
 
-export function MatchCard({ fixture, followedTeams = [] }: MatchCardProps) {
+export function MatchCard({ fixture, followedTeams = [], id }: MatchCardProps) {
   const isFollowed = isFollowedMatch(fixture, followedTeams);
 
   return (
     <article
+      id={id}
       className={`${styles.matchCard} ${isFollowed ? styles.matchCardFollowed : ''}`}
     >
       <div className={styles.matchMeta}>

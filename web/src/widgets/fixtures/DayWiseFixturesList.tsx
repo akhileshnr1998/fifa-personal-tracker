@@ -1,4 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { getFollowedTeams } from '../../features/settings/preferences';
+import {
+  findNearestUpcomingFixture,
+  fixtureElementId,
+} from './findNearestUpcomingFixture';
 import { MatchCard } from './MatchCard';
 import { groupFixturesByDay } from './groupByDay';
 import styles from './fixtures.module.css';
@@ -11,6 +16,25 @@ interface DayWiseFixturesListProps {
 export function DayWiseFixturesList({ fixtures }: DayWiseFixturesListProps) {
   const groups = groupFixturesByDay(fixtures);
   const followedTeams = getFollowedTeams();
+  const hasAutoScrolledRef = useRef(false);
+  const scrollTarget = findNearestUpcomingFixture(fixtures);
+
+  useEffect(() => {
+    if (hasAutoScrolledRef.current || !scrollTarget) {
+      return;
+    }
+
+    const element = document.getElementById(fixtureElementId(scrollTarget.id));
+    if (!element) {
+      return;
+    }
+
+    hasAutoScrolledRef.current = true;
+
+    requestAnimationFrame(() => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [scrollTarget]);
 
   return (
     <div className={styles.dayList}>
@@ -24,6 +48,7 @@ export function DayWiseFixturesList({ fixtures }: DayWiseFixturesListProps) {
             {group.fixtures.map((fixture) => (
               <MatchCard
                 key={fixture.id}
+                id={fixtureElementId(fixture.id)}
                 fixture={fixture}
                 followedTeams={followedTeams}
               />

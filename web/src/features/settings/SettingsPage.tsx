@@ -19,7 +19,6 @@ export function SettingsPage() {
     stored.reminderMinutesBefore,
   );
   const [teamOptions, setTeamOptions] = useState<string[]>([]);
-  const [teamFilter, setTeamFilter] = useState('');
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -50,16 +49,16 @@ export function SettingsPage() {
     };
   }, []);
 
-  const filteredTeams = teamOptions.filter((name) =>
-    name.toLowerCase().includes(teamFilter.trim().toLowerCase()),
-  );
+  const availableTeams = teamOptions.filter((name) => !teams.includes(name));
 
-  function toggleTeam(teamName: string) {
+  function addTeam(teamName: string) {
     setTeams((current) =>
-      current.includes(teamName)
-        ? current.filter((name) => name !== teamName)
-        : [...current, teamName],
+      current.includes(teamName) ? current : [...current, teamName],
     );
+  }
+
+  function removeTeam(teamName: string) {
+    setTeams((current) => current.filter((name) => name !== teamName));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -138,31 +137,53 @@ export function SettingsPage() {
           <p className={styles.helperText}>
             You&apos;ll be notified before these teams kick off.
           </p>
-          <input
-            className={styles.textInput}
-            value={teamFilter}
-            onChange={(event) => setTeamFilter(event.target.value)}
-            placeholder="Search teams…"
-            aria-label="Filter teams"
-          />
-          <div className={styles.teamList}>
-            {loadingTeams ? (
-              <p className={styles.mutedText}>Loading teams…</p>
-            ) : filteredTeams.length === 0 ? (
-              <p className={styles.mutedText}>No teams match your search.</p>
-            ) : (
-              filteredTeams.map((teamName) => (
-                <label key={teamName} className={styles.teamOption}>
-                  <input
-                    type="checkbox"
-                    checked={teams.includes(teamName)}
-                    onChange={() => toggleTeam(teamName)}
-                  />
+          {teams.length > 0 ? (
+            <ul className={styles.selectedTeams} aria-label="Teams you follow">
+              {teams.map((teamName) => (
+                <li key={teamName} className={styles.selectedTeamChip}>
                   <span>{teamName}</span>
-                </label>
-              ))
-            )}
-          </div>
+                  <button
+                    type="button"
+                    className={styles.removeTeamButton}
+                    onClick={() => removeTeam(teamName)}
+                    aria-label={`Remove ${teamName}`}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.mutedText}>No teams selected yet.</p>
+          )}
+          {loadingTeams ? (
+            <p className={styles.mutedText}>Loading teams…</p>
+          ) : (
+            <select
+              className={styles.selectInput}
+              value=""
+              onChange={(event) => {
+                const teamName = event.target.value;
+                if (teamName) {
+                  addTeam(teamName);
+                }
+              }}
+              aria-label="Add a team to follow"
+            >
+              <option value="" disabled>
+                {availableTeams.length === 0
+                  ? teams.length === teamOptions.length
+                    ? 'All teams selected'
+                    : 'No teams available'
+                  : 'Select a team…'}
+              </option>
+              {availableTeams.map((teamName) => (
+                <option key={teamName} value={teamName}>
+                  {teamName}
+                </option>
+              ))}
+            </select>
+          )}
         </section>
 
         <section className={styles.section}>

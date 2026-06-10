@@ -66,6 +66,8 @@
 
 .matchCard {
   position: relative;
+  scroll-margin-top: 5rem;
+  scroll-margin-bottom: 1.5rem;
   background: var(--wc-white);
   border: 1px solid var(--wc-border);
   border-radius: 16px;
