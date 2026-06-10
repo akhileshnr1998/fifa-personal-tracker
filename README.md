@@ -29,7 +29,7 @@ nvm use
 
 ```bash
 cd api
-npm run migration:run
+npm run migration:run:local
 ```
 
 Schema is defined by TypeORM entities under `api/src/**/entities/` and versioned in `api/src/migrations/`. New tables ship as migrations — do not edit the database by hand.
@@ -41,7 +41,7 @@ cd api
 cp .env.example .env
 # Set DATABASE_URL and SPORTMONKS_API_KEY
 npm install
-npm run migration:run
+npm run migration:run:local
 npm run start:dev
 ```
 
@@ -69,13 +69,13 @@ All schema changes are managed through TypeORM. The CLI and runtime both read `D
 ```bash
 cd api
 npm run migration:show    # list pending/applied migrations
-npm run migration:run     # apply pending migrations
+npm run migration:run:local     # apply pending migrations
 npm run migration:revert  # roll back the last migration
 ```
 
 On Render, migrations run automatically during the build step (`render.yaml`).
 
-To add a new table in a later phase: create a TypeORM entity, generate or author a migration in `api/src/migrations/`, and run `npm run migration:run`.
+To add a new table in a later phase: create a TypeORM entity, generate or author a migration in `api/src/migrations/`, and run `npm run migration:run:local`.
 
 ## Tests
 
@@ -86,7 +86,7 @@ cd ../web && npm test
 
 ## Deploy
 
-- **Backend:** connect the `api/` folder to Render using `render.yaml`. Migrations run on each deploy.
+- **Backend:** connect the `api/` folder to Render (Root Directory: `api`). `@nestjs/cli` and `typescript` are production dependencies so `npm install && npm run build` works on Render. Migrations use `migration:run` (reads `DATABASE_URL` from Render env vars).
 - **Frontend:** deploy `web/` to Vercel or Netlify with `VITE_API_BASE_URL` pointing at the Render API URL.
 
 ## Phase 1 scope
@@ -115,4 +115,4 @@ Add to `api/.env`:
 
 SMS is intentionally omitted (zero-cost Web Push only, per product architect).
 
-**Migration for Phase 7.1:** after Phase 7 migrations, run `npm run migration:run` again to add `users.reminder_minutes_before`.
+**Migration for Phase 7.1:** after Phase 7 migrations, run `npm run migration:run:local` again to add `users.reminder_minutes_before`.
