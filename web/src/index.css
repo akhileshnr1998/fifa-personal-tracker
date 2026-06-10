@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+
+  /* FIFA World Cup 2026 — host-nation palette */
+  --wc-green: #0d5c2e;
+  --wc-green-bright: #1a7a43;
+  --wc-green-soft: #e6f4ec;
+  --wc-gold: #c9a227;
+  --wc-gold-soft: #fdf6dc;
+  --wc-navy: #0a1628;
+  --wc-red: #ce1126;
+  --wc-white: #ffffff;
+  --wc-surface: #fafbf9;
+  --wc-muted: #5c6b73;
+  --wc-border: #dce8df;
+
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--wc-navy);
+  background: var(--wc-surface);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f0f7f2;
+}
+
+button {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}

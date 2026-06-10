@@ -1,0 +1,154 @@
+.shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.backgroundImage {
+  position: absolute;
+  inset: -5% 0 0;
+  background: url('/images/world-cup-trophy.svg') center 18% no-repeat;
+  background-size: min(92vw, 540px);
+  opacity: 0.055;
+  filter: saturate(0.85);
+}
+
+.backgroundGradient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 130% 70% at 50% -5%, rgba(13, 92, 46, 0.22) 0%, transparent 58%),
+    radial-gradient(circle at 8% 78%, rgba(206, 17, 38, 0.1) 0%, transparent 42%),
+    radial-gradient(circle at 92% 68%, rgba(201, 162, 39, 0.14) 0%, transparent 40%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(13, 92, 46, 0.08) 0%, transparent 55%),
+    linear-gradient(
+      165deg,
+      #e8f3ec 0%,
+      #f4f9f6 28%,
+      #fafbf9 52%,
+      #fdf8ee 78%,
+      #f5f9f6 100%
+    );
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--wc-border);
+  box-shadow: 0 4px 24px rgba(13, 92, 46, 0.06);
+}
+
+.hostStripe {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--wc-green) 0%,
+    var(--wc-green) 33.3%,
+    var(--wc-red) 33.3%,
+    var(--wc-red) 66.6%,
+    var(--wc-gold) 66.6%,
+    var(--wc-gold) 100%
+  );
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trophy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.35rem;
+  background: linear-gradient(135deg, var(--wc-gold-soft) 0%, #fff 100%);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(201, 162, 39, 0.2);
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--wc-navy);
+  line-height: 1.2;
+}
+
+.hosts {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--wc-green);
+}
+
+.settingsButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--wc-green-soft);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.settingsButton:hover {
+  background: #d4eddf;
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2.5rem;
+}
+
+.viewport {
+  width: 100%;
+}
+
+.loadingState {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--wc-muted);
+}
