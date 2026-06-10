@@ -3,7 +3,7 @@ services:
     name: fifa-2026-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npm run migration:run
+    buildCommand: npm install --include=dev && npm run build && npm run migration:run:prod
     startCommand: npm run start:prod
     envVars:
       - key: NODE_VERSION
