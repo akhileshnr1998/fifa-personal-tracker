@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: fifa-2026-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build && npm run migration:run
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: "22.13.1"
+      - key: DATABASE_URL
+        sync: false
+      - key: SPORTMONKS_API_KEY
+        sync: false
+      - key: SPORTMONKS_LEAGUE_ID
+        value: "2370"
+      - key: CORS_ORIGIN
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: CRON_SECRET
+        sync: false
