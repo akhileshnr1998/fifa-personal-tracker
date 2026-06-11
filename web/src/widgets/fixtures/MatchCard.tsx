@@ -1,26 +1,40 @@
 import { TeamWithFlag } from './TeamWithFlag';
 import { formatKickoffTime } from './groupByDay';
+import { formatStageLabel } from './stageLabels';
 import styles from './fixtures.module.css';
 import type { Fixture } from './types';
 
 interface MatchCardProps {
   fixture: Fixture;
-  followedTeams?: string[];
+  followedTeams?: number[];
   id?: string;
 }
 
 function isFollowedMatch(
   fixture: Fixture,
-  followedTeams: string[],
+  followedTeamIds: number[],
 ): boolean {
   return (
-    followedTeams.includes(fixture.home_team) ||
-    followedTeams.includes(fixture.away_team)
+    followedTeamIds.includes(fixture.home_team.id) ||
+    followedTeamIds.includes(fixture.away_team.id)
   );
+}
+
+function formatScore(fixture: Fixture): string | null {
+  if (fixture.status !== 'finished') {
+    return null;
+  }
+
+  if (fixture.home_score === null || fixture.away_score === null) {
+    return null;
+  }
+
+  return `${fixture.home_score} – ${fixture.away_score}`;
 }
 
 export function MatchCard({ fixture, followedTeams = [], id }: MatchCardProps) {
   const isFollowed = isFollowedMatch(fixture, followedTeams);
+  const scoreLine = formatScore(fixture);
 
   return (
     <article
@@ -39,19 +53,27 @@ export function MatchCard({ fixture, followedTeams = [], id }: MatchCardProps) {
         </span>
       </div>
       <div className={styles.teams}>
-        <TeamWithFlag name={fixture.home_team} align="left" />
-        <span className={styles.vsBadge} aria-label="versus">
-          ⚽
-        </span>
-        <TeamWithFlag name={fixture.away_team} align="right" />
+        <TeamWithFlag name={fixture.home_team.name} align="left" />
+        {scoreLine ? (
+          <span className={styles.scoreBadge} aria-label={`Final score ${scoreLine}`}>
+            {scoreLine}
+          </span>
+        ) : (
+          <span className={styles.vsBadge} aria-label="versus">
+            ⚽
+          </span>
+        )}
+        <TeamWithFlag name={fixture.away_team.name} align="right" />
       </div>
       <div className={styles.cardFooter}>
-        <span className={styles.stageBadge}>Stage {fixture.stage_id}</span>
+        <span className={styles.stageBadge}>
+          {formatStageLabel(fixture.stage_id)}
+        </span>
         <span className={styles.venue}>
           <span className={styles.venueIcon} aria-hidden="true">
             📍
           </span>
-          {fixture.venue}
+          {fixture.venue.name}
         </span>
       </div>
     </article>

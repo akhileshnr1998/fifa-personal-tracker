@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { getFollowedTeams } from '../../features/settings/preferences';
+import { getFollowedTeamIds } from '../../features/settings/preferences';
 import {
   findNearestUpcomingFixture,
   fixtureElementId,
@@ -15,7 +15,7 @@ interface DayWiseFixturesListProps {
 
 export function DayWiseFixturesList({ fixtures }: DayWiseFixturesListProps) {
   const groups = groupFixturesByDay(fixtures);
-  const followedTeams = getFollowedTeams();
+  const followedTeams = getFollowedTeamIds();
   const hasAutoScrolledRef = useRef(false);
   const scrollTarget = findNearestUpcomingFixture(fixtures);
 

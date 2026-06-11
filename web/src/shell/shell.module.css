@@ -114,7 +114,13 @@
   color: var(--wc-green);
 }
 
-.settingsButton {
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -126,11 +132,30 @@
   font-size: 1.1rem;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
 }
 
-.settingsButton:hover {
+.iconButton:hover:not(:disabled) {
   background: #d4eddf;
+}
+
+.iconButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.iconButtonSpinning {
+  animation: headerRefreshSpin 0.8s linear infinite;
+}
+
+@keyframes headerRefreshSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .main {

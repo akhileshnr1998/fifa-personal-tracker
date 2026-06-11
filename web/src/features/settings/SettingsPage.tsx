@@ -1,6 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchTeamNames, saveUserSettings } from './api';
+import {
+  fetchTeamPickerOptions,
+  saveUserSettings,
+  type TeamPickerOption,
+} from './api';
 import { IosInstallHint } from './IosInstallHint';
 import { loadPreferences, savePreferences } from './preferences';
 import { subscribeToPush } from './push';
@@ -13,12 +17,12 @@ import styles from './settings.module.css';
 export function SettingsPage() {
   const stored = useMemo(() => loadPreferences(), []);
   const [userName, setUserName] = useState(stored.userName);
-  const [teams, setTeams] = useState<string[]>(stored.teams);
+  const [teams, setTeams] = useState<number[]>(stored.teams);
   const [pushEnabled, setPushEnabled] = useState(stored.pushNotificationsEnabled);
   const [reminderMinutes, setReminderMinutes] = useState(
     stored.reminderMinutesBefore,
   );
-  const [teamOptions, setTeamOptions] = useState<string[]>([]);
+  const [teamOptions, setTeamOptions] = useState<TeamPickerOption[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -27,10 +31,10 @@ export function SettingsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchTeamNames()
-      .then((names) => {
+    fetchTeamPickerOptions()
+      .then((options) => {
         if (!cancelled) {
-          setTeamOptions(names);
+          setTeamOptions(options);
         }
       })
       .catch(() => {
@@ -49,16 +53,22 @@ export function SettingsPage() {
     };
   }, []);
 
-  const availableTeams = teamOptions.filter((name) => !teams.includes(name));
+  const availableTeams = teamOptions.filter(
+    (team) => !teams.includes(team.id),
+  );
+  const selectedTeamLabels = teams.map((teamId) => {
+    const match = teamOptions.find((team) => team.id === teamId);
+    return { id: teamId, name: match?.name ?? `Team ${teamId}` };
+  });
 
-  function addTeam(teamName: string) {
+  function addTeam(teamId: number) {
     setTeams((current) =>
-      current.includes(teamName) ? current : [...current, teamName],
+      current.includes(teamId) ? current : [...current, teamId],
     );
   }
 
-  function removeTeam(teamName: string) {
-    setTeams((current) => current.filter((name) => name !== teamName));
+  function removeTeam(teamId: number) {
+    setTeams((current) => current.filter((id) => id !== teamId));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -139,14 +149,14 @@ export function SettingsPage() {
           </p>
           {teams.length > 0 ? (
             <ul className={styles.selectedTeams} aria-label="Teams you follow">
-              {teams.map((teamName) => (
-                <li key={teamName} className={styles.selectedTeamChip}>
-                  <span>{teamName}</span>
+              {selectedTeamLabels.map((team) => (
+                <li key={team.id} className={styles.selectedTeamChip}>
+                  <span>{team.name}</span>
                   <button
                     type="button"
                     className={styles.removeTeamButton}
-                    onClick={() => removeTeam(teamName)}
-                    aria-label={`Remove ${teamName}`}
+                    onClick={() => removeTeam(team.id)}
+                    aria-label={`Remove ${team.name}`}
                   >
                     ×
                   </button>
@@ -163,9 +173,9 @@ export function SettingsPage() {
               className={styles.selectInput}
               value=""
               onChange={(event) => {
-                const teamName = event.target.value;
-                if (teamName) {
-                  addTeam(teamName);
+                const teamId = Number(event.target.value);
+                if (teamId) {
+                  addTeam(teamId);
                 }
               }}
               aria-label="Add a team to follow"
@@ -177,9 +187,9 @@ export function SettingsPage() {
                     : 'No teams available'
                   : 'Select a team…'}
               </option>
-              {availableTeams.map((teamName) => (
-                <option key={teamName} value={teamName}>
-                  {teamName}
+              {availableTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
                 </option>
               ))}
             </select>

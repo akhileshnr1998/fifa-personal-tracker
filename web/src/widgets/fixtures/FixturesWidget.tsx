@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useFixturesRefresh } from '../../shell/FixturesRefreshContext';
 import { DayWiseFixturesList } from './DayWiseFixturesList';
 import { FixturesEmptyState } from './FixturesEmptyState';
 import { FixturesSkeleton } from './FixturesSkeleton';
@@ -7,16 +8,12 @@ import { useFixtures } from './useFixtures';
 
 export default function FixturesWidget() {
   const { fixtures, status, refresh } = useFixtures();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { requestRefresh, isRefreshing, setRefreshHandler } = useFixturesRefresh();
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refresh();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    setRefreshHandler(refresh);
+    return () => setRefreshHandler(null);
+  }, [refresh, setRefreshHandler]);
 
   if (status === 'loading') {
     return <FixturesSkeleton />;
@@ -25,7 +22,7 @@ export default function FixturesWidget() {
   if (status === 'empty' || status === 'error') {
     return (
       <FixturesEmptyState
-        onRefresh={handleRefresh}
+        onRefresh={requestRefresh}
         isRefreshing={isRefreshing}
       />
     );

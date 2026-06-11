@@ -11,9 +11,12 @@ function makeFixture(
     match_number: id,
     match_date_time,
     stage_id: 1,
-    home_team: 'Home',
-    away_team: 'Away',
-    venue: 'Stadium',
+    home_team: { id: 1, name: 'Home' },
+    away_team: { id: 2, name: 'Away' },
+    venue: { id: 1, name: 'Stadium' },
+    status: 'scheduled',
+    home_score: null,
+    away_score: null,
   };
 }
 

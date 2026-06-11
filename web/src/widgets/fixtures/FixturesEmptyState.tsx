@@ -17,7 +17,7 @@ export function FixturesEmptyState({
       <h2 className={styles.emptyTitle}>The wait is almost over</h2>
       <p className={styles.emptyCopy}>
         FIFA World Cup 2026 schedules aren&apos;t ready yet — but the world&apos;s
-        greatest tournament is coming. Tap refresh to load the latest fixtures.
+        greatest tournament is coming. Tap refresh to load fixtures and scores.
       </p>
       <button
         type="button"

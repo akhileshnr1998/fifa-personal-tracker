@@ -7,13 +7,18 @@ function buildUrl(path: string): string {
   return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
 }
 
-export async function fetchTeamNames(): Promise<string[]> {
+export interface TeamPickerOption {
+  id: number;
+  name: string;
+}
+
+export async function fetchTeamPickerOptions(): Promise<TeamPickerOption[]> {
   const response = await fetch(buildUrl('/api/teams/names'));
   if (!response.ok) {
-    throw new Error('Unable to load team names');
+    throw new Error('Unable to load teams');
   }
 
-  return response.json() as Promise<string[]>;
+  return response.json() as Promise<TeamPickerOption[]>;
 }
 
 export async function fetchVapidPublicKey(): Promise<string> {

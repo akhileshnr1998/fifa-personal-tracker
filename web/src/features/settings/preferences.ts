@@ -6,7 +6,7 @@ import {
 
 export interface UserPreferences {
   userName: string;
-  teams: string[];
+  teams: number[];
   pushNotificationsEnabled: boolean;
   reminderMinutesBefore: ReminderMinutes;
 }
@@ -20,6 +20,16 @@ const defaultPreferences: UserPreferences = {
   reminderMinutesBefore: DEFAULT_REMINDER_MINUTES,
 };
 
+function normalizeStoredTeams(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isInteger(entry));
+}
+
 export function loadPreferences(): UserPreferences {
   try {
     const raw = localStorage.getItem(PREFERENCES_KEY);
@@ -30,7 +40,7 @@ export function loadPreferences(): UserPreferences {
     const parsed = JSON.parse(raw) as Partial<UserPreferences>;
     return {
       userName: parsed.userName ?? '',
-      teams: Array.isArray(parsed.teams) ? parsed.teams : [],
+      teams: normalizeStoredTeams(parsed.teams),
       pushNotificationsEnabled: Boolean(parsed.pushNotificationsEnabled),
       reminderMinutesBefore: normalizeReminderMinutes(
         parsed.reminderMinutesBefore,
@@ -45,6 +55,6 @@ export function savePreferences(preferences: UserPreferences): void {
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
 }
 
-export function getFollowedTeams(): string[] {
+export function getFollowedTeamIds(): number[] {
   return loadPreferences().teams;
 }

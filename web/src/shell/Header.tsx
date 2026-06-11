@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useFixturesRefresh } from './FixturesRefreshContext';
 import { getCurrentPhase } from './register-widgets';
 import styles from './shell.module.css';
 
 export function Header() {
   const showSettings = getCurrentPhase() >= 7;
+  const { requestRefresh, isRefreshing } = useFixturesRefresh();
 
   return (
     <header className={styles.header}>
@@ -18,15 +20,28 @@ export function Header() {
             <p className={styles.hosts}>USA · CAN · MEX</p>
           </div>
         </div>
-        {showSettings ? (
-          <Link
-            to="/settings"
-            className={styles.settingsButton}
-            aria-label="Settings"
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${isRefreshing ? styles.iconButtonSpinning : ''}`}
+            onClick={() => void requestRefresh()}
+            disabled={isRefreshing}
+            aria-label={isRefreshing ? 'Refreshing fixtures' : 'Refresh fixtures and scores'}
+            title="Refresh fixtures and scores"
           >
-            ⚙️
-          </Link>
-        ) : null}
+            🔄
+          </button>
+          {showSettings ? (
+            <Link
+              to="/settings"
+              className={styles.iconButton}
+              aria-label="Settings"
+              title="Notification settings"
+            >
+              ⚙️
+            </Link>
+          ) : null}
+        </div>
       </div>
     </header>
   );

@@ -6,6 +6,7 @@ const TEAM_ISO_CODES: Record<string, string> = {
   belgium: 'be',
   'bosnia & herzegovina': 'ba',
   'bosnia and herzegovina': 'ba',
+  'bosnia-herzegovina': 'ba',
   brazil: 'br',
   canada: 'ca',
   'cape verde': 'cv',
@@ -75,6 +76,14 @@ export function isPlaceholderTeam(teamName: string): boolean {
   }
 
   if (/^3(?:[A-L]\/?)+$/i.test(value)) {
+    return true;
+  }
+
+  if (
+    /\b(?:2nd Place|3rd Place|Third Place|Semifinal|Quarterfinal|Round of (?:16|32))\b/i.test(
+      value,
+    )
+  ) {
     return true;
   }
 
