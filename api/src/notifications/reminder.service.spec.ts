@@ -110,8 +110,10 @@ describe('ReminderService', () => {
         return Promise.resolve([
           {
             id: 101,
-            home_team: 'Mexico',
-            away_team: 'Argentina',
+            home_team_id: 203,
+            away_team_id: 10,
+            home_team: { id: 203, name: 'Mexico' },
+            away_team: { id: 10, name: 'Argentina' },
             match_date_time: matchDate,
           },
         ]);

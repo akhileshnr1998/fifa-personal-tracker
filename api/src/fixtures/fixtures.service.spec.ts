@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TeamEntity } from '../teams/entities/team.entity';
+import { VenueEntity } from '../venues/entities/venue.entity';
 import { FixtureEntity } from './entities/fixture.entity';
 import { FixturesService } from './fixtures.service';
 import { FixturesSyncService } from './fixtures-sync.service';
@@ -8,27 +10,62 @@ import { FixturesSyncService } from './fixtures-sync.service';
 describe('FixturesService', () => {
   let service: FixturesService;
   let repository: jest.Mocked<Pick<Repository<FixtureEntity>, 'count' | 'find'>>;
-  let syncService: { syncFromSportmonks: jest.Mock };
+  let syncService: { syncFromEspn: jest.Mock };
+
+  const mexico: TeamEntity = {
+    id: 203,
+    name: 'Mexico',
+    is_placeholder: false,
+    espn_team_id: 203,
+    updated_at: new Date(),
+  };
+  const southAfrica: TeamEntity = {
+    id: 467,
+    name: 'South Africa',
+    is_placeholder: false,
+    espn_team_id: 467,
+    updated_at: new Date(),
+  };
+  const estadio: VenueEntity = {
+    id: 1672,
+    name: 'Estadio Banorte',
+    city: 'Mexico City',
+    country: 'Mexico',
+    espn_venue_id: 1672,
+    updated_at: new Date(),
+  };
 
   const sampleFixtures: FixtureEntity[] = [
     {
-      id: 2,
+      id: 760416,
       match_number: 2,
       match_date_time: new Date('2026-06-12T20:00:00.000Z'),
-      stage_id: 12049,
-      home_team: 'Argentina',
-      away_team: 'Brazil',
-      venue: 'MetLife Stadium',
+      stage_id: 1,
+      home_team_id: 10,
+      away_team_id: 11,
+      home_team: { ...mexico, id: 10, name: 'Argentina' },
+      away_team: { ...southAfrica, id: 11, name: 'Brazil' },
+      venue_id: 200,
+      venue: { ...estadio, id: 200, name: 'MetLife Stadium' },
+      status: 'scheduled',
+      home_score: null,
+      away_score: null,
       updated_at: new Date(),
     },
     {
-      id: 1,
+      id: 760415,
       match_number: 1,
       match_date_time: new Date('2026-06-11T20:00:00.000Z'),
-      stage_id: 12049,
-      home_team: 'Mexico',
-      away_team: 'TBD',
-      venue: 'Estadio Azteca',
+      stage_id: 1,
+      home_team_id: 203,
+      away_team_id: 467,
+      home_team: mexico,
+      away_team: southAfrica,
+      venue_id: 1672,
+      venue: estadio,
+      status: 'finished',
+      home_score: 2,
+      away_score: 1,
       updated_at: new Date(),
     },
   ];
@@ -38,7 +75,7 @@ describe('FixturesService', () => {
       count: jest.fn(),
       find: jest.fn(),
     };
-    syncService = { syncFromSportmonks: jest.fn().mockResolvedValue([]) };
+    syncService = { syncFromEspn: jest.fn().mockResolvedValue([]) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,13 +94,16 @@ describe('FixturesService', () => {
     service = module.get(FixturesService);
   });
 
-  it('hydrates from Sportmonks when database is empty', async () => {
+  it('hydrates from ESPN when database is empty', async () => {
     repository.count.mockResolvedValue(0);
     repository.find.mockResolvedValue(sampleFixtures);
 
     await service.getFixtures();
 
-    expect(syncService.syncFromSportmonks).toHaveBeenCalled();
+    expect(syncService.syncFromEspn).toHaveBeenCalled();
+    expect(repository.find).toHaveBeenCalledWith({
+      relations: ['home_team', 'away_team', 'venue'],
+    });
   });
 
   it('serves from Postgres without sync when rows exist', async () => {
@@ -72,9 +112,9 @@ describe('FixturesService', () => {
 
     const result = await service.getFixtures();
 
-    expect(syncService.syncFromSportmonks).not.toHaveBeenCalled();
-    expect(result[0].id).toBe(1);
-    expect(result[1].id).toBe(2);
+    expect(syncService.syncFromEspn).not.toHaveBeenCalled();
+    expect(result[0].venue.id).toBe(1672);
+    expect(result[1].home_team.id).toBe(10);
   });
 
   it('forces re-sync when refresh is requested', async () => {
@@ -83,6 +123,6 @@ describe('FixturesService', () => {
 
     await service.getFixtures(true);
 
-    expect(syncService.syncFromSportmonks).toHaveBeenCalled();
+    expect(syncService.syncFromEspn).toHaveBeenCalled();
   });
 });

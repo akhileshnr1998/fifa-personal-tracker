@@ -1,30 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { FixtureEntity } from '../fixtures/entities/fixture.entity';
-import { isPlaceholderTeam } from './is-placeholder-team';
+import { In, Repository } from 'typeorm';
+import { TeamPickerOptionDto } from './dto/team-summary.dto';
+import { TeamEntity } from './entities/team.entity';
 
 @Injectable()
 export class TeamsService {
   constructor(
-    @InjectRepository(FixtureEntity)
-    private readonly fixturesRepository: Repository<FixtureEntity>,
+    @InjectRepository(TeamEntity)
+    private readonly teamsRepository: Repository<TeamEntity>,
   ) {}
 
-  async getTeamNames(): Promise<string[]> {
-    const fixtures = await this.fixturesRepository.find({
-      select: ['home_team', 'away_team'],
+  async getPickerOptions(): Promise<TeamPickerOptionDto[]> {
+    const teams = await this.teamsRepository.find({
+      where: { is_placeholder: false },
+      order: { name: 'ASC' },
     });
 
-    const names = new Set<string>();
-    for (const fixture of fixtures) {
-      for (const teamName of [fixture.home_team, fixture.away_team]) {
-        if (!isPlaceholderTeam(teamName)) {
-          names.add(teamName);
-        }
-      }
+    return teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+    }));
+  }
+
+  async findFollowableTeamsByIds(teamIds: number[]): Promise<TeamEntity[]> {
+    if (teamIds.length === 0) {
+      return [];
     }
 
-    return [...names].sort((a, b) => a.localeCompare(b));
+    return this.teamsRepository.find({
+      where: {
+        id: In(teamIds),
+        is_placeholder: false,
+      },
+    });
   }
 }

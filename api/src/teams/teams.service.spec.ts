@@ -1,21 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { FixtureEntity } from '../fixtures/entities/fixture.entity';
+import { TeamEntity } from './entities/team.entity';
 import { TeamsService } from './teams.service';
 
 describe('TeamsService', () => {
   let service: TeamsService;
-  let repository: jest.Mocked<Pick<Repository<FixtureEntity>, 'find'>>;
+  let repository: jest.Mocked<Pick<Repository<TeamEntity>, 'find'>>;
 
   beforeEach(async () => {
-    repository = { find: jest.fn() };
+    repository = {
+      find: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TeamsService,
         {
-          provide: getRepositoryToken(FixtureEntity),
+          provide: getRepositoryToken(TeamEntity),
           useValue: repository,
         },
       ],
@@ -24,28 +26,33 @@ describe('TeamsService', () => {
     service = module.get(TeamsService);
   });
 
-  it('returns deduplicated sorted national team names only', async () => {
+  it('returns sorted non-placeholder teams for the settings picker', async () => {
     repository.find.mockResolvedValue([
       {
-        home_team: 'Mexico',
-        away_team: 'Argentina',
+        id: 203,
+        name: 'Mexico',
+        is_placeholder: false,
+        espn_team_id: 203,
+        updated_at: new Date(),
       },
       {
-        home_team: '1A',
-        away_team: 'W74',
+        id: 10,
+        name: 'Argentina',
+        is_placeholder: false,
+        espn_team_id: 10,
+        updated_at: new Date(),
       },
-      {
-        home_team: 'Brazil',
-        away_team: '3C/E/F/H/I',
-      },
-      {
-        home_team: 'L101',
-        away_team: 'TBD',
-      },
-    ] as FixtureEntity[]);
+    ]);
 
-    const names = await service.getTeamNames();
+    const result = await service.getPickerOptions();
 
-    expect(names).toEqual(['Argentina', 'Brazil', 'Mexico']);
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { is_placeholder: false },
+      order: { name: 'ASC' },
+    });
+    expect(result).toEqual([
+      { id: 203, name: 'Mexico' },
+      { id: 10, name: 'Argentina' },
+    ]);
   });
 });

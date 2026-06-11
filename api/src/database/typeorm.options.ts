@@ -1,9 +1,11 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
+import { TeamEntity } from '../teams/entities/team.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
 import { UserEntity } from '../users/entities/user.entity';
+import { VenueEntity } from '../venues/entities/venue.entity';
 
 export function getDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -25,8 +27,10 @@ export function getTypeOrmOptions(databaseUrl?: string): DataSourceOptions {
     type: 'postgres',
     url,
     entities: [
-      FixtureEntity,
+      TeamEntity,
+      VenueEntity,
       UserEntity,
+      FixtureEntity,
       FollowedTeamEntity,
       ReminderDispatchEntity,
     ],

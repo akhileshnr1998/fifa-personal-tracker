@@ -2,12 +2,14 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { TeamsService } from '../teams/teams.service';
 import { FollowedTeamEntity } from './entities/followed-team.entity';
 import { UserEntity } from './entities/user.entity';
 import { UserService } from './user.service';
 
 describe('UserService', () => {
   let service: UserService;
+  let teamsService: { findFollowableTeamsByIds: jest.Mock };
 
   const usersRepository = {
     findOne: jest.fn(),
@@ -38,6 +40,17 @@ describe('UserService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    teamsService = {
+      findFollowableTeamsByIds: jest.fn().mockResolvedValue([
+        {
+          id: 203,
+          name: 'Mexico',
+          is_placeholder: false,
+          espn_team_id: 203,
+          updated_at: new Date(),
+        },
+      ]),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -53,6 +66,10 @@ describe('UserService', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: TeamsService,
+          useValue: teamsService,
         },
       ],
     }).compile();
@@ -70,7 +87,7 @@ describe('UserService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('upserts user settings and followed teams', async () => {
+  it('upserts user settings and followed team ids', async () => {
     usersRepository.findOne.mockResolvedValue(null);
     usersRepository.create.mockImplementation((data) => data);
     usersRepository.save.mockResolvedValue(undefined);
@@ -80,7 +97,7 @@ describe('UserService', () => {
 
     const result = await service.saveSettings('user-1', {
       userName: 'Alex',
-      teams: ['Mexico'],
+      teams: [203],
       pushNotificationsEnabled: true,
       reminderMinutesBefore: 1440,
       subscription: {
@@ -91,15 +108,9 @@ describe('UserService', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(usersRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'user-1',
-        user_name: 'Alex',
-        push_notifications_enabled: true,
-        reminder_minutes_before: 1440,
-      }),
-    );
-    expect(followedTeamsRepository.save).toHaveBeenCalled();
+    expect(followedTeamsRepository.save).toHaveBeenCalledWith([
+      expect.objectContaining({ user_id: 'user-1', team_id: 203 }),
+    ]);
   });
 
   it('resets reminder timing to default when push is disabled', async () => {

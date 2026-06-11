@@ -21,10 +21,12 @@ export class FixturesService {
     const count = await this.fixturesRepository.count();
 
     if (count === 0 || forceSync) {
-      await this.fixturesSyncService.syncFromSportmonks();
+      await this.fixturesSyncService.syncFromEspn();
     }
 
-    const fixtures = await this.fixturesRepository.find();
+    const fixtures = await this.fixturesRepository.find({
+      relations: ['home_team', 'away_team', 'venue'],
+    });
     return sortFixturesChronologically(fixtures).map(toFixtureResponseDto);
   }
 }

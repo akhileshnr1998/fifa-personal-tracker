@@ -4,27 +4,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of } from 'rxjs';
 import { Repository } from 'typeorm';
+import { TeamEntity } from '../teams/entities/team.entity';
+import { VenueEntity } from '../venues/entities/venue.entity';
 import { FixtureEntity } from './entities/fixture.entity';
 import { FixturesSyncService } from './fixtures-sync.service';
 
 describe('FixturesSyncService', () => {
   let service: FixturesSyncService;
-  let repository: jest.Mocked<Pick<Repository<FixtureEntity>, 'upsert' | 'find'>>;
+  let fixturesRepository: jest.Mocked<
+    Pick<Repository<FixtureEntity>, 'upsert' | 'find'>
+  >;
+  let teamsRepository: jest.Mocked<Pick<Repository<TeamEntity>, 'upsert'>>;
+  let venuesRepository: jest.Mocked<Pick<Repository<VenueEntity>, 'upsert'>>;
   let httpService: { get: jest.Mock };
   let configService: { get: jest.Mock };
 
   beforeEach(async () => {
-    repository = {
+    fixturesRepository = {
       upsert: jest.fn().mockResolvedValue(undefined),
       find: jest.fn().mockResolvedValue([]),
     };
+    teamsRepository = {
+      upsert: jest.fn().mockResolvedValue(undefined),
+    };
+    venuesRepository = {
+      upsert: jest.fn().mockResolvedValue(undefined),
+    };
     httpService = { get: jest.fn() };
     configService = {
-      get: jest.fn((key: string) => {
-        if (key === 'SPORTMONKS_API_KEY') return 'test-key';
-        if (key === 'SPORTMONKS_LEAGUE_ID') return '2370';
-        return undefined;
-      }),
+      get: jest.fn(() => undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,7 +42,15 @@ describe('FixturesSyncService', () => {
         { provide: ConfigService, useValue: configService },
         {
           provide: getRepositoryToken(FixtureEntity),
-          useValue: repository,
+          useValue: fixturesRepository,
+        },
+        {
+          provide: getRepositoryToken(TeamEntity),
+          useValue: teamsRepository,
+        },
+        {
+          provide: getRepositoryToken(VenueEntity),
+          useValue: venuesRepository,
         },
       ],
     }).compile();
@@ -42,77 +58,192 @@ describe('FixturesSyncService', () => {
     service = module.get(FixturesSyncService);
   });
 
-  it('maps Sportmonks fixtures including TBD placeholders', () => {
-    const mapped = service.mapSportmonksFixture(
+  it('maps ESPN fixtures with team and venue ids', () => {
+    const [mapped] = service.mapEspnEvents([
       {
-        id: 439281,
-        starting_at: '2026-06-11T20:00:00.000Z',
-        stage_id: 12049,
-        participants: [
-          { name: 'Mexico', meta: { location: 'home' } },
-          { name: 'TBD', meta: { location: 'away' } },
+        id: '760415',
+        date: '2026-06-11T19:00Z',
+        season: { slug: 'group-stage' },
+        competitions: [
+          {
+            startDate: '2026-06-11T19:00Z',
+            status: {
+              type: {
+                name: 'STATUS_FULL_TIME',
+                state: 'post',
+                completed: true,
+              },
+            },
+            venue: {
+              id: '1672',
+              fullName: 'Estadio Banorte',
+              address: { city: 'Mexico City', country: 'Mexico' },
+            },
+            competitors: [
+              {
+                homeAway: 'home',
+                score: '2',
+                team: { id: '203', displayName: 'Mexico' },
+              },
+              {
+                homeAway: 'away',
+                score: '1',
+                team: { id: '467', displayName: 'South Africa' },
+              },
+            ],
+          },
         ],
-        venue: { name: 'Estadio Azteca' },
       },
-      1,
-    );
+    ]);
 
     expect(mapped).toMatchObject({
-      id: 439281,
+      id: 760415,
       match_number: 1,
-      stage_id: 12049,
-      home_team: 'Mexico',
-      away_team: 'TBD',
-      venue: 'Estadio Azteca',
+      stage_id: 1,
+      home_team_id: 203,
+      away_team_id: 467,
+      venue_id: 1672,
+      status: 'finished',
+      home_score: 2,
+      away_score: 1,
     });
   });
 
-  it('returns empty array when API key is missing', async () => {
-    configService.get.mockImplementation((key: string) =>
-      key === 'SPORTMONKS_API_KEY' ? undefined : '2370',
-    );
+  it('maps venue from competition.venue when event.venue is missing', () => {
+    const [mapped] = service.mapEspnEvents([
+      {
+        id: '760415',
+        date: '2026-06-11T19:00Z',
+        season: { slug: 'group-stage' },
+        competitions: [
+          {
+            startDate: '2026-06-11T19:00Z',
+            venue: {
+              id: '1672',
+              fullName: 'Estadio Banorte',
+              address: { city: 'Mexico City', country: 'Mexico' },
+            },
+            competitors: [
+              {
+                homeAway: 'home',
+                team: { id: '203', displayName: 'Mexico' },
+              },
+              {
+                homeAway: 'away',
+                team: { id: '467', displayName: 'South Africa' },
+              },
+            ],
+          },
+        ],
+      },
+    ]);
 
-    const result = await service.syncFromSportmonks();
-
-    expect(result).toEqual([]);
-    expect(httpService.get).not.toHaveBeenCalled();
+    expect(mapped.venue_id).toBe(1672);
   });
 
-  it('upserts fixtures from Sportmonks response', async () => {
+  it('upserts venues from competition.venue when event.venue is missing', async () => {
+    await service.upsertVenuesFromEvents([
+      {
+        id: '760415',
+        competitions: [
+          {
+            venue: { id: '1672', fullName: 'Estadio Banorte' },
+          },
+        ],
+      },
+    ]);
+
+    expect(venuesRepository.upsert).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 1672, name: 'Estadio Banorte' }),
+      ]),
+      ['id'],
+    );
+  });
+
+  it('upserts teams, venues, and fixtures from ESPN response', async () => {
     httpService.get.mockReturnValue(
       of({
         data: {
-          data: [
+          events: [
             {
-              id: 1,
-              starting_at: '2026-06-11T20:00:00.000Z',
-              stage_id: 10,
-              participants: [
-                { name: 'Mexico', meta: { location: 'home' } },
-                { name: 'Canada', meta: { location: 'away' } },
+              id: '760415',
+              date: '2026-06-11T19:00Z',
+              season: { slug: 'group-stage' },
+              competitions: [
+                {
+                  startDate: '2026-06-11T19:00Z',
+                  status: {
+                    type: {
+                      name: 'STATUS_SCHEDULED',
+                      state: 'pre',
+                      completed: false,
+                    },
+                  },
+                  venue: { id: '1672', fullName: 'Estadio Banorte' },
+                  competitors: [
+                    {
+                      homeAway: 'home',
+                      team: { id: '203', displayName: 'Mexico' },
+                    },
+                    {
+                      homeAway: 'away',
+                      team: { id: '467', displayName: 'South Africa' },
+                    },
+                  ],
+                },
               ],
-              venue: { name: 'Estadio Azteca' },
             },
           ],
         },
       }),
     );
-    repository.find.mockResolvedValue([
+    fixturesRepository.find.mockResolvedValue([
       {
-        id: 1,
+        id: 760415,
         match_number: 1,
-        match_date_time: new Date('2026-06-11T20:00:00.000Z'),
-        stage_id: 10,
-        home_team: 'Mexico',
-        away_team: 'Canada',
-        venue: 'Estadio Azteca',
+        match_date_time: new Date('2026-06-11T19:00:00.000Z'),
+        stage_id: 1,
+        home_team_id: 203,
+        away_team_id: 467,
+        venue_id: 1672,
+        home_team: {
+          id: 203,
+          name: 'Mexico',
+          is_placeholder: false,
+          espn_team_id: 203,
+          updated_at: new Date(),
+        },
+        away_team: {
+          id: 467,
+          name: 'South Africa',
+          is_placeholder: false,
+          espn_team_id: 467,
+          updated_at: new Date(),
+        },
+        venue: {
+          id: 1672,
+          name: 'Estadio Banorte',
+          city: null,
+          country: null,
+          espn_venue_id: 1672,
+          updated_at: new Date(),
+        },
+        status: 'scheduled',
+        home_score: null,
+        away_score: null,
         updated_at: new Date(),
       },
     ]);
 
-    const result = await service.syncFromSportmonks();
+    const result = await service.syncFromEspn();
 
-    expect(repository.upsert).toHaveBeenCalled();
+    expect(teamsRepository.upsert).toHaveBeenCalled();
+    expect(venuesRepository.upsert).toHaveBeenCalled();
+    expect(fixturesRepository.upsert).toHaveBeenCalled();
+    expect(fixturesRepository.find).toHaveBeenCalledWith({
+      relations: ['home_team', 'away_team', 'venue'],
+    });
     expect(result).toHaveLength(1);
   });
 });

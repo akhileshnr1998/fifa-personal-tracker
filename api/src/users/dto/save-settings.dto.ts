@@ -9,7 +9,7 @@ export interface PushSubscriptionDto {
 
 export class SaveSettingsDto {
   userName!: string;
-  teams!: string[];
+  teams!: number[];
   pushNotificationsEnabled!: boolean;
   reminderMinutesBefore?: number;
   subscription?: PushSubscriptionDto | null;

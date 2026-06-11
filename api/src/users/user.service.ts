@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { TeamsService } from '../teams/teams.service';
 import { SaveSettingsDto } from './dto/save-settings.dto';
 import { FollowedTeamEntity } from './entities/followed-team.entity';
 import { UserEntity } from './entities/user.entity';
@@ -20,6 +21,7 @@ export class UserService {
     private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(FollowedTeamEntity)
     private readonly followedTeamsRepository: Repository<FollowedTeamEntity>,
+    private readonly teamsService: TeamsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -36,7 +38,18 @@ export class UserService {
       throw new BadRequestException('Name is required.');
     }
 
-    const teams = Array.isArray(dto.teams) ? dto.teams : [];
+    const teamIds = Array.isArray(dto.teams) ? dto.teams : [];
+    const uniqueTeamIds = [...new Set(teamIds)];
+
+    if (uniqueTeamIds.length > 0) {
+      const validTeams =
+        await this.teamsService.findFollowableTeamsByIds(uniqueTeamIds);
+      if (validTeams.length !== uniqueTeamIds.length) {
+        throw new BadRequestException(
+          'One or more followed teams are invalid or not followable.',
+        );
+      }
+    }
 
     await this.dataSource.transaction(async (manager) => {
       const usersRepo = manager.getRepository(UserEntity);
@@ -69,11 +82,11 @@ export class UserService {
       await usersRepo.save(user);
       await followedRepo.delete({ user_id: userId });
 
-      if (teams.length > 0) {
-        const followed = teams.map((teamName) =>
+      if (uniqueTeamIds.length > 0) {
+        const followed = uniqueTeamIds.map((teamId) =>
           followedRepo.create({
             user_id: userId,
-            team_name: teamName,
+            team_id: teamId,
           }),
         );
         await followedRepo.save(followed);
@@ -89,7 +102,7 @@ export class UserService {
   async getUserWithFollowedTeams(userId: string): Promise<UserEntity> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      relations: ['followed_teams'],
+      relations: ['followed_teams', 'followed_teams.team'],
     });
 
     if (!user) {
@@ -99,9 +112,9 @@ export class UserService {
     return user;
   }
 
-  async findUsersFollowingTeam(teamName: string): Promise<UserEntity[]> {
+  async findUsersFollowingTeam(teamId: number): Promise<UserEntity[]> {
     const followed = await this.followedTeamsRepository.find({
-      where: { team_name: teamName },
+      where: { team_id: teamId },
       relations: ['user'],
     });
 

@@ -49,12 +49,13 @@ export class ReminderService {
         where: {
           match_date_time: Between(windowStart, windowEnd),
         },
+        relations: ['home_team', 'away_team'],
       });
 
       for (const fixture of upcomingFixtures) {
-        const teamNames = [fixture.home_team, fixture.away_team];
+        const teamIds = [fixture.home_team_id, fixture.away_team_id];
         const recipients = await this.findEligibleRecipients(
-          teamNames,
+          teamIds,
           fixture.id,
           reminderMinutes,
         );
@@ -68,8 +69,8 @@ export class ReminderService {
             await this.notificationService.sendPush(user.push_subscription, {
               title: 'Match reminder',
               body: formatReminderPushBody(
-                fixture.home_team,
-                fixture.away_team,
+                fixture.home_team.name,
+                fixture.away_team.name,
                 reminderMinutes,
               ),
               url: '/',
@@ -95,14 +96,14 @@ export class ReminderService {
   }
 
   private async findEligibleRecipients(
-    teamNames: string[],
+    teamIds: number[],
     fixtureId: number,
     reminderMinutes: ReminderMinutes,
   ): Promise<UserEntity[]> {
     const followed = await this.followedTeamsRepository
       .createQueryBuilder('ft')
       .innerJoinAndSelect('ft.user', 'user')
-      .where('ft.team_name IN (:...teamNames)', { teamNames })
+      .where('ft.team_id IN (:...teamIds)', { teamIds })
       .andWhere('user.push_notifications_enabled = true')
       .andWhere('user.push_subscription IS NOT NULL')
       .andWhere('user.reminder_minutes_before = :reminderMinutes', {

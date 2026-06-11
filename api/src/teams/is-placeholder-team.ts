@@ -1,6 +1,7 @@
 /**
- * Knockout bracket codes (1A, W74, L101, 3C/E/F/H/I, TBD, etc.) are not
- * followable national teams — exclude them from the Settings team picker.
+ * Knockout bracket codes (1A, W74, L101) and ESPN placeholder labels
+ * (Group E Winner, Third Place Group A/B/C/D/F, etc.) are not followable
+ * national teams — exclude them from the Settings team picker.
  */
 export function isPlaceholderTeam(teamName: string): boolean {
   const value = teamName.trim();
@@ -13,6 +14,14 @@ export function isPlaceholderTeam(teamName: string): boolean {
   }
 
   if (/^3[A-L](?:\/[A-L])+$/i.test(value)) {
+    return true;
+  }
+
+  if (
+    /\b(?:2nd Place|3rd Place|Third Place|Semifinal|Quarterfinal|Round of (?:16|32))\b/i.test(
+      value,
+    )
+  ) {
     return true;
   }
 
