@@ -39,7 +39,7 @@ Schema is defined by TypeORM entities under `api/src/**/entities/` and versioned
 ```bash
 cd api
 cp .env.example .env
-# Set DATABASE_URL and SPORTMONKS_API_KEY
+# Set DATABASE_URL (no third-party API key required for fixtures)
 npm install
 npm run migration:run:local
 npm run start:dev
@@ -47,7 +47,11 @@ npm run start:dev
 
 API runs at `http://localhost:3000`.
 
-**Manual re-sync:** call `GET /api/fixtures?refresh=true`, or clear the `fixtures` table and reload the app.
+**Manual re-sync:** call `GET /api/fixtures?refresh=true` to pull the latest schedule and final scores from ESPN. To test a full fresh lifecycle, drop/reset the database, run migrations, then open the app (first load hydrates `teams` + `fixtures` automatically).
+
+**Schema note:** `teams` and `venues` are normalized lookup tables; fixtures reference `home_team_id`, `away_team_id`, and `venue_id`; followed-team preferences reference `teams.id`.
+
+**Optional env:** `ESPN_WC_DATE_RANGE` (default `20260611-20260719`) overrides the ESPN scoreboard date filter.
 
 ### 3. Web
 
@@ -91,9 +95,9 @@ cd ../web && npm test
 
 ## Phase 1 scope
 
-- `GET /api/fixtures` with on-demand Sportmonks hydration
+- `GET /api/fixtures` with on-demand ESPN hydration (schedule + final scores)
 - Widget shell with only the Fixtures widget registered
-- Day-wise grouped match cards, skeleton loader, empty state + refresh
+- Day-wise grouped match cards with finished-match scores, skeleton loader, sticky header refresh + empty-state refresh
 
 ## Phase 7 — Settings & Notifications
 

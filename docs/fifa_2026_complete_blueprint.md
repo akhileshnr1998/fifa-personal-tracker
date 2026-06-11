@@ -8,7 +8,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-10 — Phase 7.1 reminder timing code complete
+> **Last updated:** 2026-06-11 — Normalized `teams` table + ESPN on-demand hydration
 
 ### Phase overview
 
@@ -29,9 +29,11 @@ This document serves as the complete technical architecture and execution roadma
 
 - [ ] Neon.tech Postgres cluster provisioned _(manual — see README)_
 - [x] `fixtures` table managed via TypeORM entity + migration
+- [x] `teams` table — normalized participants referenced by ID across fixtures and notifications
+- [x] `venues` table — normalized stadiums referenced by `fixtures.venue_id`
 - [x] NestJS API project scaffolded (Render-ready)
 - [x] TypeORM configured with Neon connection and versioned migrations
-- [ ] Sportmonks API key configured in env _(set `SPORTMONKS_API_KEY` in `api/.env`)_
+- [x] ESPN public scoreboard hydration _(no API key — see `docs/espn_api_signatures.md`)_
 - [x] Vite + React frontend scaffolded
 - [ ] Frontend deployed (Vercel / Netlify)
 - [ ] Backend deployed (Render)
@@ -44,8 +46,9 @@ This document serves as the complete technical architecture and execution roadma
 **Backend**
 
 - [x] `GET /api/fixtures` endpoint implemented
-- [x] On-demand Sportmonks hydration (empty DB → fetch → upsert)
-- [x] Serve from Postgres when data exists (skip Sportmonks)
+- [x] On-demand ESPN hydration (empty DB → fetch → upsert)
+- [x] Serve from Postgres when data exists (skip ESPN)
+- [x] Final scores on finished matches (`home_score`, `away_score`, `status`)
 - [x] Fixtures sorted chronologically in response
 - [x] Manual re-sync path documented / tested (clear table → re-hydrate)
 
@@ -54,15 +57,16 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `src/shell/` — AppShell, Header, WidgetRouter
 - [x] `src/shell/registry.ts` — widget registry + `TournamentWidget` contract
 - [x] Only Fixtures widget registered (no extra nav tabs)
-- [x] Phase 1 header: title only, no Settings gear
+- [x] Phase 1 header: title + sticky **Refresh** button (no Settings gear until Phase 7)
 
 **Frontend — Fixtures widget (`src/widgets/fixtures/`)**
 
 - [x] `useFixtures()` hook — fetches `GET /api/fixtures`
 - [x] Skeleton loader during API cold start
 - [x] Day-wise date grouping (localized headings)
-- [x] Match card — number, kickoff time, stage, home vs away, venue
+- [x] Match card — number, kickoff time, stage, home vs away, venue, final score
 - [x] Empty state with **Refresh** button
+- [x] Sticky header **🔄** refresh button (`shell/Header.tsx` → `GET /api/fixtures?refresh=true`)
 - [x] No team highlights, filters, or Settings link (Phase 1 scope)
 
 **Phase 1 complete**
@@ -90,7 +94,7 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] Livescore DB tables / schema
 - [ ] `GET /api/livescore` endpoint
 - [ ] `GET /api/livescore/:fixtureId` endpoint
-- [ ] Sportmonks live score sync (polling or webhook)
+- [ ] _Deferred — post-match scores live on fixtures via ESPN refresh; no live polling_
 - [ ] `src/widgets/livescore/` — real-time score cards
 - [ ] Minute-by-minute event timeline
 - [ ] Mobile-optimized layout
@@ -103,7 +107,7 @@ This document serves as the complete technical architecture and execution roadma
 
 - [ ] Bracket DB tables / schema
 - [ ] `GET /api/bracket` endpoint
-- [ ] Sportmonks bracket hydration
+- [ ] ESPN or local `fixtures` bracket derivation
 - [ ] `src/widgets/bracket/` — visual knockout tree
 - [ ] Auto-refresh when matches complete
 - [ ] Bracket tab enabled in widget registry
@@ -116,7 +120,7 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] Teams / players DB tables
 - [ ] `GET /api/teams` — all 48 national teams
 - [ ] `GET /api/teams/:id/squad` — roster + player profiles
-- [ ] Sportmonks squad hydration
+- [ ] ESPN teams/roster hydration
 - [ ] `src/widgets/teams/` — team browser
 - [ ] Player profiles — position, stats
 - [ ] Teams tab enabled in widget registry
@@ -160,7 +164,7 @@ This document serves as the complete technical architecture and execution roadma
 **Frontend — Settings (`src/features/settings/`)**
 
 - [x] Settings route `/settings`
-- [x] Settings gear in app shell header
+- [x] Settings gear in app shell header (beside refresh button)
 - [x] Name input (`userName`)
 - [x] Team multi-select with search (from `GET /api/teams/names`)
 - [x] Push notifications toggle + browser permission flow
@@ -259,8 +263,8 @@ The application utilizes an **On-Demand Hydration Strategy** to keep operations 
                TypeORM / Postgres |               | Axion / Outbound HTTP
                                   v               v
                         +---------+----+   +------+------------------+
-                        |  Neon.tech   |   |   Sportmonks V3 API    |
-                        | (PostgreSQL) |   | (Dynamic World Cup Data)|
+                        |  Neon.tech   |   |  ESPN Public Scoreboard |
+                        | (PostgreSQL) |   |  (fifa.world, no key)   |
                         +--------------+   +-------------------------+
 ```
 
@@ -390,9 +394,10 @@ The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions 
 ### F. Setup / Data Hydration Workflow
 1. **User Request:** A user loads the frontend. The SPA dispatches a request to `GET /api/fixtures`.
 2. **Database Verification:** The backend checks the database state (`SELECT COUNT(*)`).
-3. **Dynamic Fetch Condition:** * **If Database is Empty:** The backend intercepts execution, issues an outbound request to the **Sportmonks API**, normalizes the schedule payloads (including TBD structural placeholders for knockouts), upserts them to Postgres, and streams down the dataset.
-   * **If Database Contains Rows:** The backend bypasses the third-party provider entirely, sourcing the response natively from Postgres to eliminate API rate limit exhaustion.
-4. **Manual Re-Sync Action:** If teams update during late tournament changes and the database needs a hard flush, clearing rows inside the Neon table forces the next user hit to pull the newest bracket states seamlessly.
+3. **Dynamic Fetch Condition:** * **If Database is Empty:** The backend intercepts execution, issues one outbound request to the **ESPN public scoreboard** (`fifa.world`), normalizes all 104 fixtures (including knockout placeholders like "Group E Winner"), upserts them to Postgres, and streams down the dataset.
+   * **If Database Contains Rows:** The backend bypasses ESPN entirely, sourcing the response natively from Postgres.
+   * **If User Taps Refresh (`?refresh=true`):** Re-fetch ESPN to update final scores and resolved knockout team names.
+4. **Manual Re-Sync Action:** `GET /api/fixtures?refresh=true` updates scores and bracket progression. To test a full fresh lifecycle, drop/reset the database, run migrations, and open the app.
 
 ---
 
@@ -410,20 +415,50 @@ npm run migration:show    # inspect migration status
 
 On Render, migrations run automatically during the build step.
 
+### Phase 1 — `TeamEntity` (`api/src/teams/entities/team.entity.ts`)
+
+| Column | Type | Notes |
+| :--- | :--- | :--- |
+| `id` | `INT` PK | ESPN `team.id` when available; synthetic negative id for placeholders; `0` = `TBD` |
+| `name` | `VARCHAR(150)` UNIQUE | Display label (e.g. `Mexico`, `Group E Winner`) |
+| `is_placeholder` | `BOOLEAN` | `true` for knockout slots — excluded from Settings picker |
+| `espn_team_id` | `INT` nullable | Original ESPN id for real nations |
+| `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
+
+Migration: `1749523700000-CreateTeamsTable.ts` (seeds `id=0` / `TBD`).
+
+### Phase 1 — `VenueEntity` (`api/src/venues/entities/venue.entity.ts`)
+
+| Column | Type | Notes |
+| :--- | :--- | :--- |
+| `id` | `INT` PK | ESPN `venue.id` when available; synthetic negative id otherwise; `0` = `TBD` |
+| `name` | `VARCHAR(150)` UNIQUE | Stadium name (e.g. `Estadio Banorte`) |
+| `city` | `VARCHAR(100)` nullable | From ESPN `address.city` |
+| `country` | `VARCHAR(100)` nullable | From ESPN `address.country` |
+| `espn_venue_id` | `INT` nullable | Original ESPN id |
+| `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
+
+Migrations: `1749524000000-CreateVenuesTable.ts`, `1749524100000-NormalizeFixtureVenueReferences.ts`.
+
 ### Phase 1 — `FixtureEntity` (`api/src/fixtures/entities/fixture.entity.ts`)
 
 | Column | Type | Notes |
 | :--- | :--- | :--- |
-| `id` | `INT` PK | Sportmonks fixture ID |
-| `match_number` | `INT` nullable | Official FIFA match number (1–104) |
+| `id` | `INT` PK | ESPN event ID |
+| `match_number` | `INT` nullable | Chronological index 1–104 from ESPN sync |
 | `match_date_time` | `TIMESTAMPTZ` | Indexed (`idx_fixtures_date`) |
 | `stage_id` | `INT` | Group stage vs knockout round |
-| `home_team` | `VARCHAR(100)` | Country or bracket placeholder |
-| `away_team` | `VARCHAR(100)` | Country or bracket placeholder |
-| `venue` | `VARCHAR(150)` | Defaults to `TBD` |
+| `home_team_id` | `INT` FK → `teams` | Indexed (`idx_fixtures_home_team_id`) |
+| `away_team_id` | `INT` FK → `teams` | Indexed (`idx_fixtures_away_team_id`) |
+| `venue_id` | `INT` FK → `venues` | Indexed (`idx_fixtures_venue_id`) |
+| `status` | `VARCHAR(20)` | `scheduled`, `finished`, or `postponed` |
+| `home_score` | `INT` nullable | Final home goals (null until finished) |
+| `away_score` | `INT` nullable | Final away goals (null until finished) |
 | `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
 
-Initial migration: `1749523200000-CreateFixturesTable.ts`.
+Migrations: `1749523200000-CreateFixturesTable.ts` (base), `1749523800000-NormalizeFixtureTeamReferences.ts` (FK columns).  
+Scores: `1749523600000-AddFixtureScores.ts`.  
+Seed migration `1749523300000-SeedWorldCup2026Fixtures` is a **no-op** — teams + fixtures hydrate from ESPN on first API call.
 
 ### Future phases — planned entities (add via new migrations)
 
@@ -437,8 +472,8 @@ Initial migration: `1749523200000-CreateFixturesTable.ts`.
 **Followed teams** (Phase 7):
 
 ```typescript
-// followed_teams — composite PK (user_id, team_name), FK → users
-// index on team_name for cron notification lookups
+// followed_teams — composite PK (user_id, team_id), FK → users, FK → teams
+// index on team_id for cron notification lookups
 ```
 
 ---
@@ -456,37 +491,43 @@ All API inputs/outputs adopt standard REST communication structures using strict
 ```json
 [
   {
-    "id": 439281,
+    "id": 760415,
     "match_number": 1,
-    "match_date_time": "2026-06-11T20:00:00.000Z",
-    "stage_id": 12049,
-    "home_team": "Mexico",
-    "away_team": "TBD",
-    "venue": "Estadio Azteca"
+    "match_date_time": "2026-06-11T19:00:00.000Z",
+    "stage_id": 1,
+    "home_team": { "id": 203, "name": "Mexico" },
+    "away_team": { "id": 467, "name": "South Africa" },
+    "venue": { "id": 1672, "name": "Estadio Banorte" },
+    "status": "finished",
+    "home_score": 2,
+    "away_score": 1
   }
 ]
 ```
 
 ### Phase 2–6 — Future Widget APIs (stub; implement when widget ships)
 
-| Widget | Planned endpoints | Sportmonks data consumed |
+| Widget | Planned endpoints | Data source |
 | :--- | :--- | :--- |
 | **Hub** | `GET /api/hub` — aggregated snapshot for dashboard | Composes responses from fixtures, standings, bracket, scorers, teams |
-| **Livescore** | `GET /api/livescore`, `GET /api/livescore/:fixtureId` | Live scores, events, minute clock |
-| **Bracket** | `GET /api/bracket` | Knockout tree nodes and progression |
-| **Teams** | `GET /api/teams`, `GET /api/teams/:id/squad` | 48 national squads, player profiles |
-| **Live Standings** | `GET /api/standings/groups`, `GET /api/standings/knockout` | Group tables, qualification slots |
+| **Livescore** | _Deferred_ | Post-match scores on `GET /api/fixtures` via ESPN refresh |
+| **Bracket** | `GET /api/bracket` | ESPN schedule or local `fixtures` derivation |
+| **Teams** | `GET /api/teams`, `GET /api/teams/:id/squad` | ESPN teams/roster endpoints |
+| **Live Standings** | `GET /api/standings/groups`, `GET /api/standings/knockout` | ESPN standings or computed from finished fixtures |
 
-Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from Sportmonks and upsert when empty or stale.
+Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from ESPN and upsert when empty or on refresh. See [`docs/espn_api_signatures.md`](./espn_api_signatures.md).
 
 ### Phase 7 — Settings & Notifications
 
 #### 2. List Teams (Settings Team Picker)
 * **Endpoint:** `GET /api/teams/names`
-* **Description:** Returns a deduplicated, sorted list of team names extracted from `fixtures` (including bracket placeholders like `Winner Group A`). Powers the multi-select in Settings. *(Distinct from `GET /api/teams` which returns full team profiles in Phase 5.)*
+* **Description:** Returns followable teams from the `teams` table (`is_placeholder = false`), sorted by name. Powers the Settings multi-select. *(Distinct from future `GET /api/teams` which returns full team profiles in Phase 5.)*
 * **Response Payload (`200 OK`):**
 ```json
-["Argentina", "Mexico", "Winner Group A", "TBD"]
+[
+  { "id": 10, "name": "Argentina" },
+  { "id": 203, "name": "Mexico" }
+]
 ```
 
 #### 3. Save User Settings (Notifications Opt-In)
@@ -496,7 +537,7 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 ```json
 {
   "userName": "Akhilesh",
-  "teams": ["Mexico", "Argentina"],
+  "teams": [203, 10],
   "pushNotificationsEnabled": true,
   "reminderMinutesBefore": 5,
   "subscription": {
@@ -553,7 +594,7 @@ The interface follows a **widget-first shell** pattern: Phase 1 ships a single F
 | :--- | :--- | :--- |
 | `/` | Day-wise fixtures list | Yes — only screen |
 
-No bottom nav, no Settings gear, no extra tabs. Header shows title only: `FIFA World Cup 2026`.
+No bottom nav, no Settings gear, no extra tabs. Header shows title + **🔄 Refresh** button: `FIFA World Cup 2026`.
 
 **Full product (Phase 2–7):**
 
@@ -567,7 +608,7 @@ No bottom nav, no Settings gear, no extra tabs. Header shows title only: `FIFA W
 | `/standings` | Live Standings | 6 |
 | `/settings` | Notification preferences | 7 |
 
-Nav tabs are **generated from the widget registry**—only enabled widgets appear. Settings gear renders only when Phase 7 is active.
+Nav tabs are **generated from the widget registry**—only enabled widgets appear. The header **Refresh** button is always visible; Settings gear renders only when Phase 7 is active (to its right).
 
 ### B. Fixtures Widget (Phase 1 — Ship First)
 
@@ -576,7 +617,9 @@ The entire MVP is this widget. Build it as an isolated module under `src/widgets
 * Loads `GET /api/fixtures` on mount; shows a skeleton loader during cold-start backend spin-up.
 * **Day-wise grouping:** matches clustered under localized date headings (e.g., `Thu, 11 Jun 2026`). Users scroll chronologically through the tournament.
 * **Match card:** match number, kickoff time (local timezone), stage badge, home vs away, venue.
-* **Empty state:** if the API returns zero rows, show a **Refresh** button that re-fetches (triggers Sportmonks hydration on the backend).
+* **Header refresh (PWA):** sticky **🔄** icon in `Header` re-fetches `GET /api/fixtures?refresh=true` — primary control for updated scores on installed home-screen apps.
+* **Empty state:** if the API returns zero rows, show a **Refresh** button (same hydration path as the header control).
+* **Finished matches:** show final score between team names when `status === 'finished'`.
 * **No extras in Phase 1:** no team highlights, no filters, no Settings link, no notification prompts.
 
 **Phase 7 additions** (same widget, incremental):
@@ -695,7 +738,7 @@ Essential for PWA compliance, specifically to enable notification support on mod
 
 ### Phase 1 — MVP: Day-Wise Fixtures (ship this first)
 
-1. **1a. DB + API skeleton** — Spin up **Neon.tech**, run TypeORM migrations (`npm run migration:run`), configure NestJS + TypeORM. Implement Sportmonks hydration for `GET /api/fixtures` only.
+1. **1a. DB + API skeleton** — Spin up **Neon.tech**, run TypeORM migrations (`npm run migration:run`), configure NestJS + TypeORM. Implement ESPN hydration for `GET /api/fixtures` (schedule + final scores).
 2. **1b. Widget shell** — Scaffold Vite + React app with `shell/` (layout, widget registry) and `widgets/fixtures/` (day-grouped list, match cards, Refresh empty state). Register only the Fixtures widget—no nav tabs.
 3. **1c. Deploy** — Push frontend to Vercel/Netlify, API to Render. Verify end-to-end: open app → see day-wise schedule.
 
@@ -705,7 +748,7 @@ Build `widgets/hub/` as a composer that embeds compact Fixtures + Standings + Br
 
 ### Phase 3 — Livescore Widget
 
-Add livescore tables + `GET /api/livescore` endpoints with Sportmonks live polling or webhook sync. Build `widgets/livescore/` with real-time score cards and event timeline. Mobile-optimized layout.
+Deferred — final scores display on Fixtures widget via ESPN refresh. Add `GET /api/livescore` only if live minute-by-minute UI is needed later.
 
 ### Phase 4 — Bracket Widget
 

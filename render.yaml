@@ -11,10 +11,6 @@ services:
         value: "22.13.1"
       - key: DATABASE_URL
         sync: false
-      - key: SPORTMONKS_API_KEY
-        sync: false
-      - key: SPORTMONKS_LEAGUE_ID
-        value: "2370"
       - key: CORS_ORIGIN
         sync: false
       - key: VAPID_PUBLIC_KEY
