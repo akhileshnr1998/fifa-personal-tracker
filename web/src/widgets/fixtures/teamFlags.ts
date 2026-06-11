@@ -31,7 +31,6 @@ const TEAM_ISO_CODES: Record<string, string> = {
   iraq: 'iq',
   'ivory coast': 'ci',
   "cote d'ivoire": 'ci',
-  "côte d'ivoire": 'ci',
   japan: 'jp',
   jordan: 'jo',
   mexico: 'mx',
@@ -62,7 +61,11 @@ const TEAM_ISO_CODES: Record<string, string> = {
 };
 
 function normalizeKey(teamName: string): string {
-  return teamName.trim().toLowerCase();
+  return teamName
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
 }
 
 export function isPlaceholderTeam(teamName: string): boolean {

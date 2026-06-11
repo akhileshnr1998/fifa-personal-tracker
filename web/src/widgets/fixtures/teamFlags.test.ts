@@ -12,6 +12,10 @@ describe('teamFlags', () => {
     expect(getTeamIsoCode('England')).toBe('gb-eng');
     expect(getTeamIsoCode('Scotland')).toBe('gb-sct');
     expect(getTeamIsoCode('Bosnia & Herzegovina')).toBe('ba');
+    expect(getTeamIsoCode('Austria')).toBe('at');
+    expect(getTeamIsoCode('Jordan')).toBe('jo');
+    expect(getTeamIsoCode('Curaçao')).toBe('cw');
+    expect(getTeamIsoCode('Türkiye')).toBe('tr');
   });
 
   it('treats knockout placeholders as non-flag teams', () => {
