@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { getEnabledWidgets } from './registry';
 import { getCurrentPhase } from './register-widgets';
@@ -40,6 +40,25 @@ export function WidgetRouter() {
 
   return (
     <div className={styles.viewport}>
+      {widgets.length > 1 && (
+        <nav className={styles.tabBar} aria-label="Widget navigation">
+          {widgets.map((widget) => {
+            const path = widget.id === defaultWidget.id ? '/' : `/${widget.id}`;
+            return (
+              <NavLink
+                key={widget.id}
+                to={path}
+                end={widget.id === defaultWidget.id}
+                className={({ isActive }) =>
+                  `${styles.tab} ${isActive ? styles.tabActive : ''}`
+                }
+              >
+                {widget.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+      )}
       <Routes>
         {widgets.map((widget) => (
           <Route

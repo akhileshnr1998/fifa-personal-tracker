@@ -15,9 +15,12 @@ This app uses **On-Demand Hydration**: Postgres is the source of truth at runtim
 
 | Trigger | Our API | ESPN call |
 | :--- | :--- | :--- |
-| First load (empty DB) | `GET /api/fixtures` | Yes — full tournament sync |
+| First load (empty DB) | `GET /api/fixtures` | Yes — full tournament sync (scoreboard) |
 | Normal load | `GET /api/fixtures` | No — serve from Postgres |
-| User taps **Refresh** (header 🔄 or empty-state CTA) | `GET /api/fixtures?refresh=true` | Yes — re-fetch and upsert |
+| User taps **Refresh** → Refresh | `GET /api/fixtures?refresh=true` | Yes — re-fetch and upsert |
+| First standings load (empty DB) | `GET /api/standings/groups` | Yes — full standings sync |
+| Normal standings load | `GET /api/standings/groups` | No — serve from Postgres |
+| User taps **Refresh** → Refresh (standings) | `GET /api/standings/groups?refresh=true` | Yes — re-fetch and upsert |
 | Push reminders | `POST /api/fixtures/check-reminders` | No — reads local fixtures only |
 
 **Data scope:** No live minute-by-minute polling. Final scores and fixture updates are pulled on **manual refresh only** — not via cron.
@@ -134,13 +137,91 @@ Scheduled match:
 
 ---
 
-## 5. Future Phases — Additional ESPN Endpoints
+## 5. Group Standings Endpoint (Phase 6)
 
-These are **not implemented yet** but available on the same public API for later widgets:
+**Used by:** `StandingsSyncService.syncFromEspn()` on empty `tournament_groups` table or `?refresh=true`.
+
+```http
+GET https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings
+```
+
+No query parameters required. Returns all 12 groups × 4 teams = 48 entries in a single response.
+
+### 5.1 Response shape
+
+```
+response.children[i]                   → one group (Group A … Group L)
+  .id                                  → tournament_groups.espn_group_id
+  .name                                → tournament_groups.name  ("Group A")
+  .abbreviation                        → tournament_groups.abbreviation  ("A")
+  .standings.entries[j]                → one team's row in that group
+    .team.id                           → group_standings.team_id → teams.id
+    .team.displayName                  → teams.name  (upserted if absent)
+    .note.description                  → group_standings.qualification_label
+    .note.color                        → group_standings.qualification_color
+    .stats[k].name / .stats[k].value   → stat fields (see mapping below)
+```
+
+### 5.2 ESPN stats → DB column mapping
+
+| `stats[k].name` | DB column | `shortDisplayName` |
+| :--- | :--- | :--- |
+| `gamesPlayed` | `games_played` | GP |
+| `wins` | `wins` | W |
+| `ties` | `draws` | D |
+| `losses` | `losses` | L |
+| `pointsFor` | `goals_for` | F |
+| `pointsAgainst` | `goals_against` | A |
+| `pointDifferential` | `goal_diff` | GD |
+| `points` | `points` | P |
+| `rank` | `rank` | Rank |
+| `rankChange` | `rank_change` | Rank Change |
+
+### 5.3 Qualification colour bands
+
+`entries[j].note.color` maps to `qualification_color`:
+
+| Hex | Meaning |
+| :--- | :--- |
+| `#81D6AC` | Advance to Round of 32 |
+| `#FAD9A1` | Borderline / tiebreaker pending |
+| `#F5A5A5` | Eliminated |
+
+### 5.4 Our API response
+
+```json
+[
+  {
+    "group_id": 1,
+    "group_name": "Group A",
+    "group_abbreviation": "A",
+    "entries": [
+      {
+        "rank": 1,
+        "rank_change": 0,
+        "team": { "id": 203, "name": "Mexico" },
+        "games_played": 1,
+        "wins": 1,
+        "draws": 0,
+        "losses": 0,
+        "goals_for": 2,
+        "goals_against": 1,
+        "goal_diff": 1,
+        "points": 3,
+        "qualification_label": "Advance to Round of 32",
+        "qualification_color": "#81D6AC"
+      }
+    ]
+  }
+]
+```
+
+---
+
+## 6. Future Phases — Additional ESPN Endpoints
 
 | Widget | ESPN endpoint | Notes |
 | :--- | :--- | :--- |
-| Standings (Phase 6) | `/sports/soccer/fifa.world/standings` | May need `apis/v2` variant |
 | Teams (Phase 5) | `/sports/soccer/fifa.world/teams` | Rosters via `/teams/{id}/roster` |
 | Hub scorers (Phase 2) | Derive from finished fixtures or ESPN news | TBD |
 
@@ -148,7 +229,7 @@ All future widgets should follow the same on-demand refresh pattern.
 
 ---
 
-## 6. Implementation Notes
+## 7. Implementation Notes
 
 1. **Three-step sync** — `FixturesSyncService.syncFromEspn()` upserts `teams`, then `venues`, then `fixtures` with `home_team_id` / `away_team_id` / `venue_id` FKs.
 2. **No seed migration** — `1749523300000-SeedWorldCup2026Fixtures` is a no-op; data hydrates on first API request.
@@ -158,7 +239,7 @@ All future widgets should follow the same on-demand refresh pattern.
 
 ---
 
-## 7. Documentation Index
+## 8. Documentation Index
 
 | Topic | URL |
 | :--- | :--- |

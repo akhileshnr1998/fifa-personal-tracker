@@ -158,6 +158,57 @@
   }
 }
 
+.settingsMenu {
+  position: relative;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  min-width: 10rem;
+  background: #fff;
+  border: 1px solid var(--wc-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(13, 92, 46, 0.12);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--wc-navy);
+  background: none;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.dropdownItem:not(:last-child) {
+  border-bottom: 1px solid var(--wc-border);
+}
+
+.dropdownItem:hover:not(:disabled) {
+  background: var(--wc-green-soft);
+}
+
+.dropdownItem:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.dropdownItemIconSpinning {
+  display: inline-block;
+  animation: headerRefreshSpin 0.8s linear infinite;
+}
+
 .main {
   position: relative;
   z-index: 1;
@@ -170,6 +221,43 @@
 
 .viewport {
   width: 100%;
+}
+
+/* ── Widget tab bar ──────────────────────────────────────────────── */
+.tabBar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--wc-white);
+  border: 1px solid var(--wc-border);
+  border-radius: 14px;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wc-muted);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background: var(--wc-green-soft);
+  color: var(--wc-green);
+}
+
+.tabActive {
+  background: var(--wc-green);
+  color: var(--wc-white);
 }
 
 .loadingState {

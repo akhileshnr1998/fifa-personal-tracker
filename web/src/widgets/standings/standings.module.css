@@ -1,0 +1,336 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Group tab bar ─────────────────────────────────────────────── */
+.groupTabs {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.groupTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.groupTab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--wc-border);
+  background: var(--wc-white);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wc-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.groupTab:hover {
+  background: var(--wc-green-soft);
+  color: var(--wc-green);
+}
+
+.groupTabActive {
+  background: var(--wc-green);
+  color: var(--wc-white);
+  border-color: var(--wc-green);
+}
+
+/* ── Group table card ──────────────────────────────────────────── */
+.tableCard {
+  background: var(--wc-white);
+  border: 1px solid var(--wc-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.tableCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--wc-border);
+}
+
+.groupLabel {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--wc-navy);
+}
+
+.teamCount {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--wc-muted);
+}
+
+/* ── Scrollable table wrapper ──────────────────────────────────── */
+.tableScroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tableScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+}
+
+/* ── Column headers ────────────────────────────────────────────── */
+.tableHead th {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--wc-muted);
+  white-space: nowrap;
+  background: var(--wc-green-soft);
+}
+
+.tableHead th:first-child {
+  padding-left: 0.75rem;
+  width: 3px;
+}
+
+.tableHead th:nth-child(2) {
+  width: 2rem;
+  text-align: center;
+}
+
+.tableHead th:nth-child(3) {
+  text-align: left;
+}
+
+.tableHead th:nth-child(n+4) {
+  text-align: center;
+}
+
+/* ── Data rows ─────────────────────────────────────────────────── */
+.tableBody tr {
+  border-top: 1px solid var(--wc-border);
+  transition: background 0.1s;
+}
+
+.tableBody tr:hover {
+  background: rgba(13, 92, 46, 0.03);
+}
+
+.tableBody td {
+  padding: 0.6rem 0.6rem;
+  font-size: 0.875rem;
+  color: var(--wc-navy);
+  white-space: nowrap;
+}
+
+/* qualification colour band — leftmost cell */
+.qualBand {
+  padding: 0 !important;
+  width: 3px;
+}
+
+.qualBandInner {
+  width: 3px;
+  height: 100%;
+  min-height: 2.5rem;
+  display: block;
+}
+
+/* rank column */
+.rankCell {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--wc-muted);
+  width: 2rem;
+}
+
+/* team name */
+.teamCell {
+  font-weight: 600;
+}
+
+.teamCellFollowed {
+  color: var(--wc-green);
+}
+
+.teamCellInner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flag {
+  flex-shrink: 0;
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  object-fit: cover;
+  border: 1px solid rgba(10, 22, 40, 0.08);
+}
+
+.flagPlaceholder {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--wc-green-soft);
+  border: 1px dashed var(--wc-border);
+  color: var(--wc-muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.followedStar {
+  font-size: 0.65rem;
+  color: var(--wc-gold);
+}
+
+/* stat columns */
+.statCell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--wc-muted);
+  font-size: 0.8rem;
+}
+
+.statCellBold {
+  font-weight: 700;
+  color: var(--wc-navy);
+}
+
+/* ── Legend ────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding-top: 0.25rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--wc-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton ──────────────────────────────────────────────────── */
+.skeletonTabs {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.skeletonTab {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--wc-green-soft) 25%, #f5faf7 50%, var(--wc-green-soft) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeletonCard {
+  border-radius: 16px;
+  border: 1px solid var(--wc-border);
+  overflow: hidden;
+  background: var(--wc-white);
+}
+
+.skeletonCardHeader {
+  height: 44px;
+  background: linear-gradient(90deg, var(--wc-green-soft) 25%, #f5faf7 50%, var(--wc-green-soft) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeletonRow {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--wc-border);
+  align-items: center;
+}
+
+.skeletonRowLine {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dce8df 25%, #f0f7f2 50%, #dce8df 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ── Empty / error state ───────────────────────────────────────── */
+.emptyState {
+  margin-top: 1.5rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--wc-white);
+  border-radius: 20px;
+  border: 1px solid var(--wc-border);
+}
+
+.emptyTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--wc-navy);
+}
+
+.emptyCopy {
+  margin: 0 0 1.5rem;
+  color: var(--wc-muted);
+  font-size: 0.9rem;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.5rem;
+  background: var(--wc-green);
+  color: var(--wc-white);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.refreshButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

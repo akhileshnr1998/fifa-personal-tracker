@@ -10,6 +10,14 @@ registerWidget({
   lazy: () => import('../widgets/fixtures/FixturesWidget'),
 });
 
+registerWidget({
+  id: 'standings',
+  label: 'Standings',
+  phase: 6,
+  navOrder: 2,
+  lazy: () => import('../widgets/standings/StandingsWidget'),
+});
+
 export function getCurrentPhase(): number {
   return CURRENT_PHASE;
 }

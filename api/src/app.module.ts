@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { getTypeOrmOptions } from './database/typeorm.options';
 import { FixturesModule } from './fixtures/fixtures.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { StandingsModule } from './standings/standings.module';
 import { TeamsModule } from './teams/teams.module';
 import { UserModule } from './users/user.module';
 
@@ -20,6 +21,7 @@ import { UserModule } from './users/user.module';
     TeamsModule,
     UserModule,
     NotificationsModule,
+    StandingsModule,
   ],
 })
 export class AppModule {}

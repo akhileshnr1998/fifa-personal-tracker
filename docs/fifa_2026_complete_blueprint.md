@@ -19,7 +19,7 @@ This document serves as the complete technical architecture and execution roadma
 | **3** | Livescore Widget | `[ ]` Not started |
 | **4** | Bracket Widget | `[ ]` Not started |
 | **5** | Teams Widget | `[ ]` Not started |
-| **6** | Live Standings Widget | `[ ]` Not started |
+| **6** | Live Standings Widget | `[x]` Code complete — deploy pending |
 | **7** | Settings + Notifications | `[x]` Code complete — deploy pending |
 | **7.1** | Reminder timing preference | `[x]` Code complete — deploy pending |
 
@@ -57,7 +57,7 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `src/shell/` — AppShell, Header, WidgetRouter
 - [x] `src/shell/registry.ts` — widget registry + `TournamentWidget` contract
 - [x] Only Fixtures widget registered (no extra nav tabs)
-- [x] Phase 1 header: title + sticky **Refresh** button (no Settings gear until Phase 7)
+- [x] Phase 1 header: title + **Settings (⚙️)** dropdown button (contains **Refresh**; **Notify** option appears from Phase 7)
 
 **Frontend — Fixtures widget (`src/widgets/fixtures/`)**
 
@@ -66,7 +66,7 @@ This document serves as the complete technical architecture and execution roadma
 - [x] Day-wise date grouping (localized headings)
 - [x] Match card — number, kickoff time, stage, home vs away, venue, final score
 - [x] Empty state with **Refresh** button
-- [x] Sticky header **🔄** refresh button (`shell/Header.tsx` → `GET /api/fixtures?refresh=true`)
+- [x] Sticky header **⚙️ Settings** dropdown button (`shell/Header.tsx`) with **🔄 Refresh** (`GET /api/fixtures?refresh=true`) and **🔔 Notify** (`/settings`) options
 - [x] No team highlights, filters, or Settings link (Phase 1 scope)
 
 **Phase 1 complete**
@@ -130,14 +130,37 @@ This document serves as the complete technical architecture and execution roadma
 
 ### Phase 6 — Live Standings Widget
 
-- [ ] Standings DB tables
-- [ ] `GET /api/standings/groups` endpoint
-- [ ] `GET /api/standings/knockout` endpoint
-- [ ] Live group table updates as matches play
-- [ ] Knockout qualification indicators
-- [ ] `src/widgets/standings/` — live group tables
-- [ ] Standings tab enabled in widget registry
-- [ ] **Phase 6 signed off**
+**Database**
+
+- [x] `tournament_groups` table migration authored (`1749530000000-CreateTournamentGroupsTable.ts`)
+- [x] `group_standings` table migration authored (`1749530100000-CreateGroupStandingsTable.ts`)
+- [ ] Migrations applied in Neon _(run `npm run migration:run` before deploy)_
+
+**Backend**
+
+- [x] `TournamentGroupEntity` + `GroupStandingEntity` TypeORM entities
+- [x] `StandingsSyncService` — ESPN on-demand hydration (`/apis/v2/.../standings`)
+- [x] `StandingsService` — serve from Postgres; sync when empty or `?refresh=true`
+- [x] `GET /api/standings/groups` endpoint (same hydration pattern as fixtures)
+- [x] `StandingsModule` registered in `AppModule`
+- [x] New entities registered in `typeorm.options.ts`
+- [ ] `GET /api/standings/knockout` endpoint _(deferred — group stage only for now)_
+
+**Frontend**
+
+- [x] `src/widgets/standings/` — live group tables widget (`StandingsWidget`, `GroupTable`, `StandingsSkeleton`)
+- [x] Group tab bar (A–L pills) — scrollable, active state, `aria-selected`
+- [x] Standing row: rank · rank_change indicator · flag · team · GP · W · D · L · GD · Pts
+- [x] Qualification colour band (`qualification_color`) — left-side stripe per row (ESPN hex used directly)
+- [x] Legend built from live entry data — no hardcoded colour map
+- [x] Country flag icons via `flagcdn.com` (reuses `teamFlags.ts` from Fixtures widget)
+- [x] Followed-team highlight + ★ on rows (from `localStorage`)
+- [x] Skeleton loader during cold-start
+- [x] Empty state with **Refresh** CTA
+- [x] Standings tab enabled in widget registry
+- [x] **Fixtures | Standings** tab bar in `WidgetRouter` (auto-renders when >1 widget registered)
+
+- [ ] **Phase 6 signed off** — pending Neon migration + deploy
 
 ---
 
@@ -164,7 +187,7 @@ This document serves as the complete technical architecture and execution roadma
 **Frontend — Settings (`src/features/settings/`)**
 
 - [x] Settings route `/settings`
-- [x] Settings gear in app shell header (beside refresh button)
+- [x] Settings gear in app shell header as a dropdown (contains **Refresh** + **Notify** options)
 - [x] Name input (`userName`)
 - [x] Team multi-select with search (from `GET /api/teams/names`)
 - [x] Push notifications toggle + browser permission flow
@@ -513,7 +536,7 @@ All API inputs/outputs adopt standard REST communication structures using strict
 | **Livescore** | _Deferred_ | Post-match scores on `GET /api/fixtures` via ESPN refresh |
 | **Bracket** | `GET /api/bracket` | ESPN schedule or local `fixtures` derivation |
 | **Teams** | `GET /api/teams`, `GET /api/teams/:id/squad` | ESPN teams/roster endpoints |
-| **Live Standings** | `GET /api/standings/groups`, `GET /api/standings/knockout` | ESPN standings or computed from finished fixtures |
+| **Live Standings** | `GET /api/standings/groups` ✅ · `GET /api/standings/knockout` _(deferred)_ | ESPN `/apis/v2/sports/soccer/fifa.world/standings` — on-demand hydration |
 
 Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from ESPN and upsert when empty or on refresh. See [`docs/espn_api_signatures.md`](./espn_api_signatures.md).
 
@@ -594,7 +617,7 @@ The interface follows a **widget-first shell** pattern: Phase 1 ships a single F
 | :--- | :--- | :--- |
 | `/` | Day-wise fixtures list | Yes — only screen |
 
-No bottom nav, no Settings gear, no extra tabs. Header shows title + **🔄 Refresh** button: `FIFA World Cup 2026`.
+No bottom nav, no extra tabs. Header shows title + **⚙️ Settings** dropdown (contains **🔄 Refresh**; no **Notify** option until Phase 7).
 
 **Full product (Phase 2–7):**
 
@@ -608,7 +631,7 @@ No bottom nav, no Settings gear, no extra tabs. Header shows title + **🔄 Refr
 | `/standings` | Live Standings | 6 |
 | `/settings` | Notification preferences | 7 |
 
-Nav tabs are **generated from the widget registry**—only enabled widgets appear. The header **Refresh** button is always visible; Settings gear renders only when Phase 7 is active (to its right).
+Nav tabs are **generated from the widget registry**—only enabled widgets appear. The header **⚙️ Settings** dropdown is always visible; the **🔔 Notify** option inside it renders only when Phase 7 is active.
 
 ### B. Fixtures Widget (Phase 1 — Ship First)
 
@@ -617,7 +640,7 @@ The entire MVP is this widget. Build it as an isolated module under `src/widgets
 * Loads `GET /api/fixtures` on mount; shows a skeleton loader during cold-start backend spin-up.
 * **Day-wise grouping:** matches clustered under localized date headings (e.g., `Thu, 11 Jun 2026`). Users scroll chronologically through the tournament.
 * **Match card:** match number, kickoff time (local timezone), stage badge, home vs away, venue.
-* **Header refresh (PWA):** sticky **🔄** icon in `Header` re-fetches `GET /api/fixtures?refresh=true` — primary control for updated scores on installed home-screen apps.
+* **Header refresh (PWA):** **🔄 Refresh** option inside the sticky **⚙️ Settings** dropdown in `Header` — re-fetches `GET /api/fixtures?refresh=true`. Primary control for updated scores on installed home-screen apps.
 * **Empty state:** if the API returns zero rows, show a **Refresh** button (same hydration path as the header control).
 * **Finished matches:** show final score between team names when `status === 'finished'`.
 * **No extras in Phase 1:** no team highlights, no filters, no Settings link, no notification prompts.
@@ -760,7 +783,7 @@ Add teams/players tables + `GET /api/teams`, `GET /api/teams/:id/squad`. Build `
 
 ### Phase 6 — Live Standings Widget
 
-Add standings tables + `GET /api/standings/groups`. Build `widgets/standings/` with live group tables and knockout qualification indicators.
+Add standings tables + `GET /api/standings/groups` ✅. Build `widgets/standings/` with live group tables, A–L tab bar, qualification colour bands, country flags, and followed-team highlights ✅. Shares on-demand ESPN hydration pattern with Fixtures.
 
 ### Phase 7 — Settings & Notifications
 

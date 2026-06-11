@@ -55,11 +55,11 @@ An architect knows that system performance means nothing if the user experience 
 ### B. Self-Healing Empty States & Manual Control
 * If the app database is completely empty (or tournament APIs fail to return data), never display a broken list layout. 
 * **Product Safeguard:** Render a structured, user-friendly empty state screen: *"🏆 FIFA World Cup 2026 Schedules are not ready yet. Try triggering a manual refresh below."* Combine this with a clear **🔄 Refresh Fixtures** CTA button that manually re-triggers the backend hydration engine.
-* **PWA header refresh:** Expose a compact **🔄** control in the sticky app header (left of the Settings gear when Phase 7 is active). It must stay reachable on every screen while the Fixtures widget is mounted, call `GET /api/fixtures?refresh=true`, spin while loading, and disable double-taps. This is the primary on-demand score update affordance for installed PWA users — no background jobs.
+* **PWA header refresh:** Expose a **Refresh** option inside the **Settings (⚙️) dropdown** in the sticky app header. It must stay reachable on every screen while the Fixtures widget is mounted, call `GET /api/fixtures?refresh=true`, spin while loading, and disable double-taps. This is the primary on-demand score update affordance for installed PWA users — no background jobs.
 
 ### C. Mobile Native Fidelity (PWA Guardrails)
 * The app is designed for users on their phones. Ensure your layouts are exclusively mobile-first, utilizing smooth scrolling, responsive touch elements, and clear vertical match cards.
-* **Sticky header actions:** Keep refresh and settings as thumb-sized icon buttons (`2.25rem` touch targets) in the top-right cluster. The header stays `position: sticky` so refresh remains one tap away while scrolling long day-grouped fixture lists.
+* **Sticky header actions:** A single **Settings (⚙️)** icon button (`2.25rem` touch target) lives in the top-right corner of the sticky header. Tapping it opens a dropdown with two options: **🔄 Refresh** (triggers `GET /api/fixtures?refresh=true`) and **🔔 Notify** (navigates to `/settings`). The header stays `position: sticky` so both actions remain one tap away while scrolling long day-grouped fixture lists.
 * **iOS Support Protocol:** iOS devices require web apps to be manually added to the Home Screen before allowing push notification permissions. The UI must explicitly detect if a user is on an iOS device and render a subtle, intuitive helper bubble instructing them how to tap the *Safari Share Icon* -> *Add to Home Screen*.
 
 ### D. User-Controlled Reminder Timing (Phase 7.1)
