@@ -9,16 +9,8 @@ import { buildTeamRecord, TBD_TEAM_ID } from '../teams/resolve-team-id';
 import { VenueEntity } from '../venues/entities/venue.entity';
 import { buildVenueRecord, TBD_VENUE_ID } from '../venues/resolve-venue-id';
 import { FixtureEntity } from './entities/fixture.entity';
-import {
-  ESPN_STAGE_SLUG_TO_ID,
-  FixtureStatus,
-} from './fixture-status';
-import {
-  EspnCompetition,
-  EspnEvent,
-  EspnScoreboardResponse,
-  EspnVenueSource,
-} from './espn.types';
+import { EspnCompetition, EspnEvent, EspnScoreboardResponse } from './espn.types';
+import { getVenueSource, mapEspnEvents } from './espn.mapper';
 
 const ESPN_SCOREBOARD_URL =
   'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
@@ -48,10 +40,7 @@ export class FixturesSyncService {
     try {
       const response = await firstValueFrom(
         this.httpService.get<EspnScoreboardResponse>(ESPN_SCOREBOARD_URL, {
-          params: {
-            dates: dateRange,
-            limit: ESPN_FETCH_LIMIT,
-          },
+          params: { dates: dateRange, limit: ESPN_FETCH_LIMIT },
         }),
       );
 
@@ -63,7 +52,7 @@ export class FixturesSyncService {
       await this.ensurePlaceholderRows();
       await this.upsertTeamsFromEvents(rawEvents);
       await this.upsertVenuesFromEvents(rawEvents);
-      const entities = this.mapEspnEvents(rawEvents);
+      const entities = mapEspnEvents(rawEvents);
       await this.fixturesRepository.upsert(entities, ['id']);
       return this.fixturesRepository.find({
         relations: ['home_team', 'away_team', 'venue'],
@@ -89,10 +78,7 @@ export class FixturesSyncService {
       }
     }
 
-    if (teams.size === 0) {
-      return;
-    }
-
+    if (teams.size === 0) return;
     await this.teamsRepository.upsert([...teams.values()], ['id']);
   }
 
@@ -101,7 +87,7 @@ export class FixturesSyncService {
 
     for (const event of events) {
       const competition = event.competitions?.[0];
-      const record = buildVenueRecord(this.getVenueSource(event, competition));
+      const record = buildVenueRecord(getVenueSource(event, competition));
       const venue = new VenueEntity();
       venue.id = record.id;
       venue.name = record.name;
@@ -111,10 +97,7 @@ export class FixturesSyncService {
       venues.set(venue.id, venue);
     }
 
-    if (venues.size === 0) {
-      return;
-    }
-
+    if (venues.size === 0) return;
     await this.venuesRepository.upsert([...venues.values()], ['id']);
   }
 
@@ -134,114 +117,5 @@ export class FixturesSyncService {
 
     await this.teamsRepository.upsert([tbdTeam], ['id']);
     await this.venuesRepository.upsert([tbdVenue], ['id']);
-  }
-
-  mapEspnEvents(events: EspnEvent[]): FixtureEntity[] {
-    const sortedEvents = [...events].sort(
-      (left, right) =>
-        this.getEventKickoff(left).getTime() -
-        this.getEventKickoff(right).getTime(),
-    );
-
-    return sortedEvents.map((event, index) =>
-      this.mapEspnEvent(event, index + 1),
-    );
-  }
-
-  mapEspnEvent(event: EspnEvent, matchNumber: number): FixtureEntity {
-    const competition = event.competitions?.[0];
-    const homeCompetitor = competition?.competitors?.find(
-      (competitor) => competitor.homeAway === 'home',
-    );
-    const awayCompetitor = competition?.competitors?.find(
-      (competitor) => competitor.homeAway === 'away',
-    );
-    const status = this.mapFixtureStatus(competition);
-    const scores = this.mapFixtureScores(competition, status);
-
-    const entity = new FixtureEntity();
-    entity.id = Number.parseInt(event.id, 10);
-    entity.match_number = matchNumber;
-    entity.match_date_time = this.getEventKickoff(event, competition);
-    entity.stage_id = this.mapStageId(event.season?.slug);
-    entity.home_team_id = buildTeamRecord(homeCompetitor).id;
-    entity.away_team_id = buildTeamRecord(awayCompetitor).id;
-    entity.venue_id = buildVenueRecord(this.getVenueSource(event, competition)).id;
-    entity.status = status;
-    entity.home_score = scores.home;
-    entity.away_score = scores.away;
-    return entity;
-  }
-
-  getVenueSource(
-    event: EspnEvent,
-    competition?: EspnCompetition,
-  ): EspnVenueSource | undefined {
-    return competition?.venue ?? event.venue;
-  }
-
-  getEventKickoff(event: EspnEvent, competition?: EspnCompetition): Date {
-    const kickoff =
-      competition?.startDate ?? competition?.date ?? event.date ?? '';
-    return kickoff ? new Date(kickoff) : new Date();
-  }
-
-  mapStageId(stageSlug?: string): number {
-    if (!stageSlug) {
-      return 0;
-    }
-    return ESPN_STAGE_SLUG_TO_ID[stageSlug] ?? 0;
-  }
-
-  mapFixtureStatus(competition?: EspnCompetition): FixtureStatus {
-    const statusType = competition?.status?.type;
-    if (!statusType) {
-      return 'scheduled';
-    }
-
-    const statusName = statusType.name ?? '';
-    if (
-      statusType.completed === true ||
-      statusType.state === 'post' ||
-      /FULL_TIME|FINAL/i.test(statusName)
-    ) {
-      return 'finished';
-    }
-
-    if (/POSTPONED|CANCELLED|ABANDONED|SUSPENDED/i.test(statusName)) {
-      return 'postponed';
-    }
-
-    return 'scheduled';
-  }
-
-  mapFixtureScores(
-    competition: EspnCompetition | undefined,
-    status: FixtureStatus,
-  ): { home: number | null; away: number | null } {
-    if (status !== 'finished' || !competition?.competitors) {
-      return { home: null, away: null };
-    }
-
-    const homeCompetitor = competition.competitors.find(
-      (competitor) => competitor.homeAway === 'home',
-    );
-    const awayCompetitor = competition.competitors.find(
-      (competitor) => competitor.homeAway === 'away',
-    );
-
-    return {
-      home: this.parseScore(homeCompetitor?.score),
-      away: this.parseScore(awayCompetitor?.score),
-    };
-  }
-
-  parseScore(score?: string): number | null {
-    if (score === undefined || score === null || score === '') {
-      return null;
-    }
-
-    const parsed = Number.parseInt(score, 10);
-    return Number.isNaN(parsed) ? null : parsed;
   }
 }

@@ -21,6 +21,20 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   return navigator.serviceWorker.register('/sw.js');
 }
 
+function formatSubscription(
+  subscription: PushSubscription,
+): PushSubscriptionPayload {
+  const json = subscription.toJSON();
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+    throw new Error('Invalid push subscription payload.');
+  }
+  return {
+    endpoint: json.endpoint,
+    expirationTime: json.expirationTime ?? null,
+    keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+  };
+}
+
 export async function subscribeToPush(): Promise<PushSubscriptionPayload> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
@@ -29,6 +43,13 @@ export async function subscribeToPush(): Promise<PushSubscriptionPayload> {
 
   const registration = await registerServiceWorker();
   await navigator.serviceWorker.ready;
+
+  // Re-use an active subscription when one already exists (M5).
+  // This avoids unnecessarily re-subscribing on every settings save.
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) {
+    return formatSubscription(existing);
+  }
 
   const publicKey = await fetchVapidPublicKey();
   if (!publicKey) {
@@ -40,23 +61,25 @@ export async function subscribeToPush(): Promise<PushSubscriptionPayload> {
     applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
   });
 
-  const json = subscription.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-    throw new Error('Invalid push subscription payload.');
-  }
-
-  return {
-    endpoint: json.endpoint,
-    expirationTime: json.expirationTime ?? null,
-    keys: {
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth,
-    },
-  };
+  return formatSubscription(subscription);
 }
 
 export function isIosDevice(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // Prefer the modern User-Agent Client Hints API (Chromium-based browsers).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uaData = (navigator as any).userAgentData as
+    | { platform?: string }
+    | undefined;
+  if (uaData?.platform) {
+    return /iphone|ipad|ipod/i.test(uaData.platform);
+  }
+
+  // Safari fallback: classic UA string + touch point check covers iPadOS
+  // desktop-mode where the UA reports "Macintosh" but maxTouchPoints > 1.
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
 }
 
 export function isStandalonePwa(): boolean {

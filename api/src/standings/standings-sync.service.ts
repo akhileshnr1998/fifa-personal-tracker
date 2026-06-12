@@ -51,10 +51,7 @@ export class StandingsSyncService {
       }
 
       await this.upsertTeamsFromGroups(groups);
-
-      for (const [index, group] of groups.entries()) {
-        await this.upsertGroup(index + 1, group);
-      }
+      await this.upsertGroupsBatch(groups);
 
       this.logger.log(`Standings synced: ${groups.length} groups`);
     } catch (error) {
@@ -86,29 +83,37 @@ export class StandingsSyncService {
     }
   }
 
-  private async upsertGroup(
-    groupId: number,
-    group: EspnStandingGroup,
-  ): Promise<void> {
-    // ESPN returns abbreviation as 'Group A' (7 chars), not 'A' — derive from sequential id.
-    const abbreviation = String.fromCharCode(64 + groupId); // 1→A, 2→B, …, 12→L
+  /**
+   * Replaces the previous sequential per-group upsert loop with two bulk
+   * queries: one for all group rows and one for all standing rows.
+   * This cuts DB round-trips from N×2 (12×2 = 24) down to 2.
+   */
+  private async upsertGroupsBatch(groups: EspnStandingGroup[]): Promise<void> {
+    const syncedAt = new Date();
 
-    const groupEntity = new TournamentGroupEntity();
-    groupEntity.id = groupId;
-    groupEntity.name = group.name ?? `Group ${abbreviation}`;
-    groupEntity.abbreviation = abbreviation;
-    groupEntity.espn_group_id = group.id ?? null;
-    groupEntity.last_synced_at = new Date();
+    const groupEntities = groups.map((group, index) => {
+      const groupId = index + 1;
+      // ESPN returns 'Group A' (7 chars) — derive single-letter abbreviation
+      // from the sequential id so we get 1→A, 2→B, …, 12→L.
+      const abbreviation = String.fromCharCode(64 + groupId);
 
-    await this.groupsRepository.upsert([groupEntity], ['id']);
+      const entity = new TournamentGroupEntity();
+      entity.id = groupId;
+      entity.name = group.name ?? `Group ${abbreviation}`;
+      entity.abbreviation = abbreviation;
+      entity.espn_group_id = group.id ?? null;
+      entity.last_synced_at = syncedAt;
+      return entity;
+    });
 
-    const standingEntities = this.buildStandingEntities(
-      groupId,
-      group.standings?.entries ?? [],
+    await this.groupsRepository.upsert(groupEntities, ['id']);
+
+    const allStandings = groups.flatMap((group, index) =>
+      this.buildStandingEntities(index + 1, group.standings?.entries ?? []),
     );
 
-    if (standingEntities.length > 0) {
-      await this.standingsRepository.upsert(standingEntities, [
+    if (allStandings.length > 0) {
+      await this.standingsRepository.upsert(allStandings, [
         'group_id',
         'team_id',
       ]);

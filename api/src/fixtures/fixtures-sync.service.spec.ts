@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { TeamEntity } from '../teams/entities/team.entity';
 import { VenueEntity } from '../venues/entities/venue.entity';
 import { FixtureEntity } from './entities/fixture.entity';
+import { mapEspnEvents } from './espn.mapper';
 import { FixturesSyncService } from './fixtures-sync.service';
 
 describe('FixturesSyncService', () => {
@@ -59,7 +60,7 @@ describe('FixturesSyncService', () => {
   });
 
   it('maps ESPN fixtures with team and venue ids', () => {
-    const [mapped] = service.mapEspnEvents([
+    const [mapped] = mapEspnEvents([
       {
         id: '760415',
         date: '2026-06-11T19:00Z',
@@ -110,7 +111,7 @@ describe('FixturesSyncService', () => {
   });
 
   it('maps venue from competition.venue when event.venue is missing', () => {
-    const [mapped] = service.mapEspnEvents([
+    const [mapped] = mapEspnEvents([
       {
         id: '760415',
         date: '2026-06-11T19:00Z',

@@ -112,17 +112,4 @@ export class UserService {
     return user;
   }
 
-  async findUsersFollowingTeam(teamId: number): Promise<UserEntity[]> {
-    const followed = await this.followedTeamsRepository.find({
-      where: { team_id: teamId },
-      relations: ['user'],
-    });
-
-    return followed
-      .map((entry) => entry.user)
-      .filter(
-        (user) =>
-          user.push_notifications_enabled && user.push_subscription !== null,
-      );
-  }
 }
