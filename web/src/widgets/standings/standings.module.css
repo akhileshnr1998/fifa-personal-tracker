@@ -334,3 +334,22 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ─── Stale-cache banner ────────────────────────────────────────────────── */
+
+.staleNotice {
+  margin: 0 1rem 0.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(13, 92, 46, 0.12); /* fallback: #0d5c2e at 12% opacity */
+  background: color-mix(in srgb, var(--wc-green) 12%, transparent);
+  color: var(--wc-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

@@ -59,6 +59,11 @@ export default function StandingsWidget() {
 
   return (
     <section className={styles.widget}>
+      {status === 'stale' && (
+        <p className={styles.staleNotice} role="status" aria-live="polite">
+          Syncing latest standings…
+        </p>
+      )}
       {/* Group A–L tab bar */}
       <div className={styles.groupTabs} role="tablist" aria-label="Select group">
         {groups.map((g) => (

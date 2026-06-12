@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { readCache, RETRY_DELAYS_MS, sleep, writeCache } from '../../lib/localCache';
 import { fetchFixtures } from './api';
 import type { Fixture } from './types';
 
-export type FixturesStatus = 'loading' | 'ready' | 'empty' | 'error';
+export type FixturesStatus = 'loading' | 'stale' | 'ready' | 'empty' | 'error';
 
 interface UseFixturesResult {
   fixtures: Fixture[];
@@ -10,16 +11,22 @@ interface UseFixturesResult {
   refresh: () => Promise<void>;
 }
 
-const RETRY_DELAYS_MS = [5_000, 15_000, 30_000];
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+const CACHE_KEY = 'fixtures';
 
 export function useFixtures(): UseFixturesResult {
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [status, setStatus] = useState<FixturesStatus>('loading');
+  // Lazy initializer — readCache runs once on mount, not on every render.
+  const [fixtures, setFixtures] = useState<Fixture[]>(
+    () => readCache<Fixture[]>(CACHE_KEY) ?? [],
+  );
+  const [status, setStatus] = useState<FixturesStatus>(() => {
+    const cached = readCache<Fixture[]>(CACHE_KEY);
+    return cached && cached.length > 0 ? 'stale' : 'loading';
+  });
+
   const abortRef = useRef<AbortController | null>(null);
+  // Tracks whether any data is currently visible so the exhausted-retry handler
+  // knows whether to flip to 'error' or keep showing stale content.
+  const hasDataRef = useRef(fixtures.length > 0);
 
   const load = useCallback(async (refresh = false) => {
     // Cancel any in-flight retry loop when a manual refresh is triggered.
@@ -27,7 +34,14 @@ export function useFixtures(): UseFixturesResult {
     const abort = new AbortController();
     abortRef.current = abort;
 
-    setStatus('loading');
+    // On a manual refresh, dismiss the stale banner immediately — the header
+    // spinner handles UX. On an automatic background load, keep stale data
+    // visible. Only show the blocking skeleton when there is nothing to show.
+    if (refresh && hasDataRef.current) {
+      setStatus('ready');
+    } else {
+      setStatus((prev) => (prev === 'stale' || prev === 'ready' ? prev : 'loading'));
+    }
 
     let lastError: unknown;
 
@@ -42,6 +56,10 @@ export function useFixtures(): UseFixturesResult {
       try {
         const data = await fetchFixtures(refresh);
         if (abort.signal.aborted) return;
+        // Empty arrays are intentionally cached: on the next visit the
+        // skeleton (not the stale banner) shows until data is available.
+        writeCache(CACHE_KEY, data);
+        hasDataRef.current = data.length > 0;
         setFixtures(data);
         setStatus(data.length === 0 ? 'empty' : 'ready');
         return;
@@ -51,11 +69,11 @@ export function useFixtures(): UseFixturesResult {
     }
 
     if (!abort.signal.aborted) {
-      // All retries exhausted — surface the error to the caller.
-      // Log the last error so developers can diagnose cold-start issues.
       console.error('[useFixtures] all retries failed', lastError);
-      setFixtures([]);
-      setStatus('error');
+      // Keep showing stale content rather than blanking the screen.
+      if (!hasDataRef.current) {
+        setStatus('error');
+      }
     }
   }, []);
 

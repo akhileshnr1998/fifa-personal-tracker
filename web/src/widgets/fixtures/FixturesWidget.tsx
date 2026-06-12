@@ -36,6 +36,11 @@ export default function FixturesWidget() {
         </span>
         <span>Kickoff June 11, 2026 — 48 nations, one dream</span>
       </div>
+      {status === 'stale' && (
+        <p className={styles.staleNotice} role="status" aria-live="polite">
+          Syncing latest scores…
+        </p>
+      )}
       <DayWiseFixturesList fixtures={fixtures} />
     </section>
   );
