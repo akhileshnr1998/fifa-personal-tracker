@@ -16,7 +16,7 @@ export class GroupStandingEntity {
   @PrimaryColumn({ type: 'int' })
   group_id!: number;
 
-  @ManyToOne(() => TournamentGroupEntity, { eager: false })
+  @ManyToOne(() => TournamentGroupEntity, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'group_id' })
   group!: TournamentGroupEntity;
 
@@ -24,7 +24,7 @@ export class GroupStandingEntity {
   @PrimaryColumn({ type: 'int' })
   team_id!: number;
 
-  @ManyToOne(() => TeamEntity, { eager: false })
+  @ManyToOne(() => TeamEntity, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'team_id' })
   team!: TeamEntity;
 

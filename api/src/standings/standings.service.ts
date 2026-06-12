@@ -9,6 +9,8 @@ import { toGroupStandingsDtoList } from './standings.mapper';
 
 @Injectable()
 export class StandingsService {
+  private syncPromise: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(TournamentGroupEntity)
     private readonly groupsRepository: Repository<TournamentGroupEntity>,
@@ -21,7 +23,7 @@ export class StandingsService {
     const count = await this.groupsRepository.count();
 
     if (count === 0 || forceSync) {
-      await this.standingsSyncService.syncFromEspn();
+      await this.runSync();
     }
 
     const standings = await this.standingsRepository.find({
@@ -30,5 +32,17 @@ export class StandingsService {
     });
 
     return toGroupStandingsDtoList(standings);
+  }
+
+  private runSync(): Promise<void> {
+    if (!this.syncPromise) {
+      this.syncPromise = this.standingsSyncService
+        .syncFromEspn()
+        .then(() => undefined)
+        .finally(() => {
+          this.syncPromise = null;
+        });
+    }
+    return this.syncPromise;
   }
 }

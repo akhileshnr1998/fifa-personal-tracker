@@ -11,6 +11,8 @@ import {
 
 @Injectable()
 export class FixturesService {
+  private syncPromise: Promise<void> | null = null;
+
   constructor(
     @InjectRepository(FixtureEntity)
     private readonly fixturesRepository: Repository<FixtureEntity>,
@@ -21,12 +23,24 @@ export class FixturesService {
     const count = await this.fixturesRepository.count();
 
     if (count === 0 || forceSync) {
-      await this.fixturesSyncService.syncFromEspn();
+      await this.runSync();
     }
 
     const fixtures = await this.fixturesRepository.find({
       relations: ['home_team', 'away_team', 'venue'],
     });
     return sortFixturesChronologically(fixtures).map(toFixtureResponseDto);
+  }
+
+  private runSync(): Promise<void> {
+    if (!this.syncPromise) {
+      this.syncPromise = this.fixturesSyncService
+        .syncFromEspn()
+        .then(() => undefined)
+        .finally(() => {
+          this.syncPromise = null;
+        });
+    }
+    return this.syncPromise;
   }
 }
