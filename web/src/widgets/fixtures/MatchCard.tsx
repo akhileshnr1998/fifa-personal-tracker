@@ -8,12 +8,10 @@ interface MatchCardProps {
   fixture: Fixture;
   followedTeams?: number[];
   id?: string;
+  onSelect?: () => void;
 }
 
-function isFollowedMatch(
-  fixture: Fixture,
-  followedTeamIds: number[],
-): boolean {
+function isFollowedMatch(fixture: Fixture, followedTeamIds: number[]): boolean {
   return (
     followedTeamIds.includes(fixture.home_team.id) ||
     followedTeamIds.includes(fixture.away_team.id)
@@ -21,25 +19,40 @@ function isFollowedMatch(
 }
 
 function formatScore(fixture: Fixture): string | null {
-  if (fixture.status !== 'finished') {
-    return null;
-  }
-
-  if (fixture.home_score === null || fixture.away_score === null) {
-    return null;
-  }
-
+  if (fixture.status !== 'finished') return null;
+  if (fixture.home_score === null || fixture.away_score === null) return null;
   return `${fixture.home_score} – ${fixture.away_score}`;
 }
 
-export function MatchCard({ fixture, followedTeams = [], id }: MatchCardProps) {
+export function MatchCard({ fixture, followedTeams = [], id, onSelect }: MatchCardProps) {
   const isFollowed = isFollowedMatch(fixture, followedTeams);
   const scoreLine = formatScore(fixture);
+  const isClickable = onSelect !== undefined;
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect?.();
+    }
+  }
 
   return (
     <article
       id={id}
-      className={`${styles.matchCard} ${isFollowed ? styles.matchCardFollowed : ''}`}
+      className={[
+        styles.matchCard,
+        isFollowed ? styles.matchCardFollowed : '',
+        isClickable ? styles.matchCardClickable : '',
+      ].join(' ')}
+      onClick={isClickable ? onSelect : undefined}
+      onKeyDown={isClickable ? handleKeyDown : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? 'button' : undefined}
+      aria-label={
+        isClickable
+          ? `View match summary for ${fixture.home_team.name} vs ${fixture.away_team.name}`
+          : undefined
+      }
     >
       <div className={styles.matchMeta}>
         <span className={styles.matchNumber}>
@@ -75,6 +88,11 @@ export function MatchCard({ fixture, followedTeams = [], id }: MatchCardProps) {
           </span>
           {fixture.venue.name}
         </span>
+        {isClickable && (
+          <span className={styles.summaryHint} aria-hidden="true">
+            📊
+          </span>
+        )}
       </div>
     </article>
   );
