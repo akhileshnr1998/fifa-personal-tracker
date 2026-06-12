@@ -3,7 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
-import { NotificationService } from './notification.service';
+import { UserEntity } from '../users/entities/user.entity';
+import { ExpiredSubscriptionError, NotificationService } from './notification.service';
 import { ReminderService } from './reminder.service';
 
 describe('ReminderService', () => {
@@ -19,6 +20,7 @@ describe('ReminderService', () => {
     delete: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
+  const usersRepository = { update: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -42,6 +44,10 @@ describe('ReminderService', () => {
         {
           provide: getRepositoryToken(ReminderDispatchEntity),
           useValue: reminderDispatchesRepository,
+        },
+        {
+          provide: getRepositoryToken(UserEntity),
+          useValue: usersRepository,
         },
         {
           provide: NotificationService,
@@ -147,6 +153,63 @@ describe('ReminderService', () => {
       'user.reminder_minutes_before = :reminderMinutes',
       { reminderMinutes: 5 },
     );
+  });
+
+  it('clears push subscription and disables notifications when endpoint returns 410', async () => {
+    notificationService.sendPush.mockRejectedValue(new ExpiredSubscriptionError());
+
+    const followedQueryBuilder = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          user_id: 'user-1',
+          team_id: 203,
+          user: {
+            id: 'user-1',
+            push_subscription: { endpoint: 'https://push.example/gone', expirationTime: null, keys: { p256dh: 'k', auth: 'a' } },
+            reminder_minutes_before: 5,
+          },
+        },
+      ]),
+    };
+
+    const insertQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [{ user_id: 'user-1' }] }),
+    };
+
+    followedTeamsRepository.createQueryBuilder.mockReturnValue(followedQueryBuilder);
+    reminderDispatchesRepository.createQueryBuilder.mockReturnValue(insertQueryBuilder);
+    reminderDispatchesRepository.find.mockResolvedValue([]);
+    usersRepository.update.mockResolvedValue(undefined);
+
+    fixturesRepository.find.mockImplementation(({ where }) => {
+      const matchDate = where.match_date_time._value?.[0] as Date | undefined;
+      if (!matchDate) return Promise.resolve([]);
+      const minutesAhead = Math.round((matchDate.getTime() - Date.now()) / 60000);
+      if (minutesAhead >= 4 && minutesAhead <= 6) {
+        return Promise.resolve([{
+          id: 101, home_team_id: 203, away_team_id: 10,
+          home_team: { id: 203, name: 'Mexico' }, away_team: { id: 10, name: 'Argentina' },
+          match_date_time: matchDate,
+        }]);
+      }
+      return Promise.resolve([]);
+    });
+
+    const result = await service.checkAndDispatchReminders();
+
+    expect(result.notificationsSent).toBe(0);
+    expect(usersRepository.update).toHaveBeenCalledWith('user-1', {
+      push_subscription: null,
+      push_notifications_enabled: false,
+    });
   });
 
   it('skips push when dispatch record already exists (concurrent cron guard)', async () => {

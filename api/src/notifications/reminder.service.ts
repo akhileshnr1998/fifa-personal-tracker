@@ -11,7 +11,7 @@ import {
   formatReminderPushBody,
   ReminderMinutes,
 } from '../users/reminder-minutes';
-import { NotificationService } from './notification.service';
+import { ExpiredSubscriptionError, NotificationService } from './notification.service';
 
 @Injectable()
 export class ReminderService {
@@ -24,6 +24,8 @@ export class ReminderService {
     private readonly followedTeamsRepository: Repository<FollowedTeamEntity>,
     @InjectRepository(ReminderDispatchEntity)
     private readonly reminderDispatchesRepository: Repository<ReminderDispatchEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -144,8 +146,28 @@ export class ReminderService {
           });
           notificationsSent += 1;
         } catch (error) {
-          // Push failed — remove the pre-written dispatch record so the next
-          // cron cycle can retry delivery.
+          if (error instanceof ExpiredSubscriptionError) {
+            // Subscription is gone on the browser side — disable push for this
+            // user so dead endpoints do not accumulate and waste future cron cycles.
+            await this.usersRepository
+              .update(user.id, {
+                push_subscription: null,
+                push_notifications_enabled: false,
+              })
+              .catch((updateError) => {
+                this.logger.warn(
+                  `Failed to clear expired subscription for user ${user.id}`,
+                  updateError,
+                );
+              });
+            this.logger.log(
+              `Cleared expired push subscription for user ${user.id}`,
+            );
+            continue;
+          }
+
+          // Transient push failure — remove the pre-written dispatch record so
+          // the next cron cycle can retry delivery.
           await this.reminderDispatchesRepository
             .delete({ user_id: user.id, fixture_id: fixture.id })
             .catch((deleteError) => {

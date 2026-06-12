@@ -1,12 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import webpush from 'web-push';
+import webpush, { WebPushError } from 'web-push';
 import { PushSubscriptionJson } from '../users/entities/user.entity';
 
 export interface PushPayload {
   title: string;
   body: string;
   url?: string;
+}
+
+/**
+ * Thrown by sendPush() when the push endpoint returns 410 Gone or 404 Not Found.
+ * Callers must catch this and clear the stored subscription for that user so dead
+ * endpoints do not accumulate in the DB.
+ */
+export class ExpiredSubscriptionError extends Error {
+  constructor() {
+    super('Push subscription has expired or is no longer valid');
+    this.name = 'ExpiredSubscriptionError';
+  }
 }
 
 @Injectable()
@@ -43,6 +55,16 @@ export class NotificationService {
       return;
     }
 
-    await webpush.sendNotification(subscription, JSON.stringify(payload));
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify(payload));
+    } catch (error) {
+      if (
+        error instanceof WebPushError &&
+        (error.statusCode === 410 || error.statusCode === 404)
+      ) {
+        throw new ExpiredSubscriptionError();
+      }
+      throw error;
+    }
   }
 }
