@@ -85,4 +85,9 @@ describe('statBarWidths', () => {
   it('treats null as 0 (home null, away has value)', () => {
     expect(statBarWidths(null, 8)).toEqual({ homePct: 0, awayPct: 100 });
   });
+  it('guarantees homePct + awayPct === 100 when total > 0', () => {
+    // 1/7 = 12.5/87.5 — dual Math.round would give 13+88=101
+    const { homePct, awayPct } = statBarWidths(1, 7);
+    expect(homePct + awayPct).toBe(100);
+  });
 });

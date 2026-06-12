@@ -50,8 +50,6 @@ export function statBarWidths(
   const a = awayVal ?? 0;
   const total = h + a;
   if (total === 0) return { homePct: 50, awayPct: 50 };
-  return {
-    homePct: Math.round((h / total) * 100),
-    awayPct: Math.round((a / total) * 100),
-  };
+  const homePct = Math.round((h / total) * 100);
+  return { homePct, awayPct: 100 - homePct };
 }
