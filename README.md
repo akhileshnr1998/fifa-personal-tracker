@@ -111,12 +111,26 @@ npx web-push generate-vapid-keys
 Add to `api/.env`:
 
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (e.g. `mailto:you@example.com`)
-- `CRON_SECRET` — random string for `POST /api/fixtures/check-reminders`
+- `CRON_SECRET` — random string for `POST /api/notifications/check-reminders`
 
-**Cron-Job.org (post-deploy):** schedule `POST https://<your-api>/api/fixtures/check-reminders` every 10–15 minutes with header `X-Cron-Secret: <CRON_SECRET>`.
+**Cron-Job.org (post-deploy):** schedule `POST https://<your-api>/api/notifications/check-reminders` every 10–15 minutes with header `X-Cron-Secret: <CRON_SECRET>`.
 
 **Web app:** open `/settings`, follow teams, enable push, choose **when to notify** (default **5 minutes before** kickoff; options up to **1 day before**), and save. Followed teams are highlighted on fixture cards.
 
 SMS is intentionally omitted (zero-cost Web Push only, per product architect).
 
 **Migration for Phase 7.1:** after Phase 7 migrations, run `npm run migration:run:local` again to add `users.reminder_minutes_before`.
+
+## Production safeguards (implemented Jun 2026)
+
+The following production-readiness improvements are live in the API:
+
+| Area | What was done |
+| :--- | :--- |
+| **Input validation** | `ValidationPipe` (`whitelist`, `transform`, `forbidNonWhitelisted`) is registered globally in `main.ts`. All `PUT /api/user/settings` fields are validated with `class-validator` decorators — malformed payloads return `400` before reaching the service layer. |
+| **Rate limiting** | `@nestjs/throttler` is installed. A global guard enforces 30 requests/min per IP. The `GET /api/fixtures` endpoint has a stricter override of 20 requests/min to protect the ESPN sync path from hammering. |
+| **Sync race condition** | `FixturesService` and `StandingsService` use an in-flight promise guard (`syncPromise`). Concurrent cold-start requests share one ESPN fetch instead of triggering duplicate syncs. |
+| **DB integrity** | `reminder_dispatches.fixture_id` now has a `FOREIGN KEY … REFERENCES fixtures(id) ON DELETE CASCADE` constraint (migration `1749530200000`). `GroupStandingEntity` `ManyToOne` decorators carry `onDelete: 'CASCADE'` to match the existing migration FK constraints. |
+| **Cron efficiency** | `ReminderService.checkAndDispatchReminders()` uses 3 bulk queries per reminder-bucket instead of 2 queries per fixture (eliminates N+1 pattern against Neon free tier). |
+| **Atomic push dispatch** | The `reminder_dispatches` dedup record is inserted (`ON CONFLICT DO NOTHING RETURNING`) **before** the Web Push fires. If the push fails the record is deleted so the next cycle can retry. Concurrent cron runs are blocked by the `RETURNING` row-count check. |
+| **Notifications route** | Cron endpoint moved from `POST /api/fixtures/check-reminders` to `POST /api/notifications/check-reminders`. Update your Cron-Job.org job URL if already configured. |

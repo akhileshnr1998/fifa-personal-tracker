@@ -5,7 +5,7 @@
 > - [ESPN hidden API gist](https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b)
 > - Mapped to requirements in [`fifa_2026_complete_blueprint.md`](./fifa_2026_complete_blueprint.md)
 >
-> **Last updated:** 2026-06-11
+> **Last updated:** 2026-06-12
 
 ---
 
@@ -21,7 +21,7 @@ This app uses **On-Demand Hydration**: Postgres is the source of truth at runtim
 | First standings load (empty DB) | `GET /api/standings/groups` | Yes — full standings sync |
 | Normal standings load | `GET /api/standings/groups` | No — serve from Postgres |
 | User taps **Refresh** → Refresh (standings) | `GET /api/standings/groups?refresh=true` | Yes — re-fetch and upsert |
-| Push reminders | `POST /api/fixtures/check-reminders` | No — reads local fixtures only |
+| Push reminders | `POST /api/notifications/check-reminders` | No — reads local fixtures only |
 
 **Data scope:** No live minute-by-minute polling. Final scores and fixture updates are pulled on **manual refresh only** — not via cron.
 
@@ -232,10 +232,12 @@ All future widgets should follow the same on-demand refresh pattern.
 ## 7. Implementation Notes
 
 1. **Three-step sync** — `FixturesSyncService.syncFromEspn()` upserts `teams`, then `venues`, then `fixtures` with `home_team_id` / `away_team_id` / `venue_id` FKs.
-2. **No seed migration** — `1749523300000-SeedWorldCup2026Fixtures` is a no-op; data hydrates on first API request.
+2. **No seed migration** — data hydrates from ESPN on first API request; no static seed file.
 3. **Rate limits** — One HTTP call per refresh; be respectful (no polling).
 4. **Unofficial API** — ESPN may change response shape without notice; keep mapper unit tests with fixture JSON snapshots.
 5. **Fresh database test** — drop all tables or reset Neon branch, run `npm run migration:run:local`, open app → first load hydrates from ESPN.
+6. **Concurrent cold-start protection** — `FixturesService` and `StandingsService` hold an in-flight `syncPromise`; multiple simultaneous requests during Render cold start share one ESPN fetch.
+7. **Rate limiting** — `GET /api/fixtures` is throttled to 20 requests/min per IP by `@nestjs/throttler` to protect against ESPN sync exhaustion. The global default is 30/min across all other endpoints.
 
 ---
 

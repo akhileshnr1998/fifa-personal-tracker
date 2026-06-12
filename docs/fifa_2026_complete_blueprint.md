@@ -8,7 +8,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-11 — Normalized `teams` table + ESPN on-demand hydration
+> **Last updated:** 2026-06-12 — Production hardening sprint (F1–F8): DB integrity FKs, sync race-condition guard, ValidationPipe, N+1 batch queries, atomic push dispatch, rate limiting, notifications route rename
 
 ### Phase overview
 
@@ -38,6 +38,17 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] Frontend deployed (Vercel / Netlify)
 - [ ] Backend deployed (Render)
 - [ ] End-to-end smoke test (app loads → fixtures visible)
+
+### Production Hardening (2026-06-12)
+
+- [x] **F1** — `reminder_dispatches.fixture_id` FK added (`1749530200000-AddFixtureFkToReminderDispatches.ts`); `ReminderDispatchEntity` updated with `@ManyToOne` + `onDelete: 'CASCADE'`
+- [x] **F2** — `GroupStandingEntity` `ManyToOne` decorators now carry `onDelete: 'CASCADE'` to match the existing migration FK constraints
+- [x] **F3** — `FixturesService` + `StandingsService` in-flight `syncPromise` guard prevents duplicate ESPN fetches on concurrent cold-start requests
+- [x] **F4** — Global `ValidationPipe` (`whitelist`, `transform`, `forbidNonWhitelisted`) in `main.ts`; `SaveSettingsDto` fully annotated with `class-validator` decorators
+- [x] **F5** — `ReminderService` cron handler rewritten to use 3 bulk DB queries per reminder-bucket (was N+1 per fixture × 2 queries)
+- [x] **F6** — Dispatch record inserted (`ON CONFLICT DO NOTHING RETURNING`) before push fires; push failure rolls back the record so the next cron cycle can retry
+- [x] **F7** — Cron endpoint relocated from `POST /api/fixtures/check-reminders` → `POST /api/notifications/check-reminders`
+- [x] **F8** — `@nestjs/throttler` installed; global 30 req/min guard; `GET /api/fixtures` overridden to 20 req/min to protect the ESPN sync path
 
 ---
 
@@ -179,9 +190,9 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `PUT /api/user/settings` — save profile + preferences
 - [x] `GET /api/user/vapid-public-key` — client push subscription
 - [ ] VAPID keys generated and configured in `api/.env` _(manual)_
-- [x] Web Push dispatch on reminder cron
+- [x] Web Push dispatch on reminder cron (batch queries, atomic dispatch — see Production Hardening F5/F6)
 - [ ] ~~Twilio SMS integration~~ _(deferred — Web Push only, $0 cost)_
-- [x] `POST /api/fixtures/check-reminders` cron endpoint (protected by `X-Cron-Secret`)
+- [x] `POST /api/notifications/check-reminders` cron endpoint (protected by `X-Cron-Secret`)
 - [ ] Cron-Job.org scheduler configured (10–15 min interval) _(manual post-deploy)_
 
 **Frontend — Settings (`src/features/settings/`)**
@@ -417,10 +428,13 @@ The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions 
 ### F. Setup / Data Hydration Workflow
 1. **User Request:** A user loads the frontend. The SPA dispatches a request to `GET /api/fixtures`.
 2. **Database Verification:** The backend checks the database state (`SELECT COUNT(*)`).
-3. **Dynamic Fetch Condition:** * **If Database is Empty:** The backend intercepts execution, issues one outbound request to the **ESPN public scoreboard** (`fifa.world`), normalizes all 104 fixtures (including knockout placeholders like "Group E Winner"), upserts them to Postgres, and streams down the dataset.
+3. **Dynamic Fetch Condition:**
+   * **If Database is Empty:** The backend intercepts execution, issues one outbound request to the **ESPN public scoreboard** (`fifa.world`), normalizes all 104 fixtures (including knockout placeholders like "Group E Winner"), upserts them to Postgres, and streams down the dataset.
    * **If Database Contains Rows:** The backend bypasses ESPN entirely, sourcing the response natively from Postgres.
    * **If User Taps Refresh (`?refresh=true`):** Re-fetch ESPN to update final scores and resolved knockout team names.
-4. **Manual Re-Sync Action:** `GET /api/fixtures?refresh=true` updates scores and bracket progression. To test a full fresh lifecycle, drop/reset the database, run migrations, and open the app.
+4. **Concurrent cold-start protection:** An in-flight `syncPromise` guard in `FixturesService` and `StandingsService` ensures that concurrent requests during a Render cold start all await the same ESPN fetch — no duplicate outbound calls.
+5. **Rate limiting:** `GET /api/fixtures` is throttled to **20 requests/min per IP** (global default: 30/min). Prevents ESPN API exhaustion and Render compute saturation from refresh spam.
+6. **Manual Re-Sync Action:** `GET /api/fixtures?refresh=true` updates scores and bracket progression. To test a full fresh lifecycle, drop/reset the database, run migrations, and open the app.
 
 ---
 
@@ -495,8 +509,26 @@ Seed migration `1749523300000-SeedWorldCup2026Fixtures` is a **no-op** — teams
 **Followed teams** (Phase 7):
 
 ```typescript
-// followed_teams — composite PK (user_id, team_id), FK → users, FK → teams
+// followed_teams — composite PK (user_id, team_id), FK → users CASCADE, FK → teams CASCADE
 // index on team_id for cron notification lookups
+```
+
+**Reminder dispatches** (Phase 7 — dedup table):
+
+```typescript
+// reminder_dispatches — composite PK (user_id, fixture_id)
+// FK user_id → users ON DELETE CASCADE
+// FK fixture_id → fixtures ON DELETE CASCADE   ← added 2026-06-12 migration 1749530200000
+// sent_at TIMESTAMPTZ default CURRENT_TIMESTAMP
+```
+
+**Group standings** (Phase 6):
+
+```typescript
+// group_standings — composite PK (group_id, team_id)
+// FK group_id → tournament_groups ON DELETE CASCADE
+// FK team_id → teams ON DELETE CASCADE
+// indexes: (group_id, rank), team_id
 ```
 
 ---
@@ -556,6 +588,7 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 #### 3. Save User Settings (Notifications Opt-In)
 * **Endpoint:** `PUT /api/user/settings`
 * **Description:** Called from the Settings screen when the user taps **Save**. Upserts profile and notification preferences. Fields are optional except `userName` and `teams` (teams may be an empty array if the user clears all follows).
+* **Validation:** All fields are validated by `class-validator` via the global `ValidationPipe`. Unknown fields are stripped (`whitelist: true`). Invalid payloads return `400 Bad Request` before reaching the service layer.
 * **Request Body Layout:**
 ```json
 {
@@ -586,7 +619,8 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 ```
 
 #### 4. Match Alert Dispatched Query (Automated Task Input)
-* **Endpoint:** `POST /api/fixtures/check-reminders`
+* **Endpoint:** `POST /api/notifications/check-reminders`
+* **Auth:** `X-Cron-Secret` header must match the `CRON_SECRET` env var. Returns `401` otherwise.
 * **Description:** Executed by an external scheduler (e.g., Cron-Job.org) every **10–15 minutes**. For each user with `push_notifications_enabled = true` and a stored `push_subscription`, finds followed-team fixtures whose kickoff falls inside that user's **personal reminder window**, then dispatches **one Web Push per user per fixture** (deduped via `reminder_dispatches`).
 * **Per-user reminder window (Phase 7.1):**
   * Let `M` = `users.reminder_minutes_before` (default `5`).
@@ -594,7 +628,8 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
   * A fixture is due for user `U` when:  
     `match_date_time` ∈ `[now + M minutes, now + M + S minutes]`
   * Example: `M = 5` → alert ~5 min before kickoff; `M = 1440` → alert ~1 day before.
-* **Cron efficiency:** batch users by distinct `reminder_minutes_before` values; one fixture query per bucket.
+* **Cron efficiency (updated 2026-06-12):** 3 bulk queries per reminder-bucket — one for fixtures in window, one for all eligible users across all fixtures in that bucket, one for all already-dispatched pairs. Joined in memory. Eliminates the previous N+1 pattern (was 2 queries per fixture).
+* **Atomic dedup (updated 2026-06-12):** `reminder_dispatches` row is inserted with `ON CONFLICT DO NOTHING RETURNING user_id` **before** the push fires. If `RETURNING` returns no rows the push is skipped (concurrent cron guard). If the push itself fails, the pre-written record is deleted so the next cron cycle retries delivery.
 * **Response Payload (`200 OK`):**
 ```json
 {
@@ -787,7 +822,7 @@ Add standings tables + `GET /api/standings/groups` ✅. Build `widgets/standings
 
 ### Phase 7 — Settings & Notifications
 
-Apply `users` + `followed_teams` schema. Implement `PUT /api/user/settings`, VAPID push (Web Push only — no SMS). Add `features/settings/` screen and Settings gear to shell. Add followed-team highlights to Fixtures widget. Configure **Cron-Job.org** on `/api/fixtures/check-reminders` every 10–15 minutes.
+Apply `users` + `followed_teams` schema. Implement `PUT /api/user/settings`, VAPID push (Web Push only — no SMS). Add `features/settings/` screen and Settings gear to shell. Add followed-team highlights to Fixtures widget. Configure **Cron-Job.org** on `POST /api/notifications/check-reminders` every 10–15 minutes with `X-Cron-Secret` header.
 
 ### Phase 7.1 — Reminder Timing Preference
 
