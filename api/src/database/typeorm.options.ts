@@ -1,6 +1,8 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
+import { MatchEventEntity } from '../match-summary/entities/match-event.entity';
+import { MatchStatEntity } from '../match-summary/entities/match-stat.entity';
 import { GroupStandingEntity } from '../standings/entities/group-standing.entity';
 import { TournamentGroupEntity } from '../standings/entities/tournament-group.entity';
 import { TeamEntity } from '../teams/entities/team.entity';
@@ -43,6 +45,8 @@ export function getTypeOrmOptions(databaseUrl?: string): DataSourceOptions {
       ReminderDispatchEntity,
       TournamentGroupEntity,
       GroupStandingEntity,
+      MatchEventEntity,
+      MatchStatEntity,
     ],
     migrations: [join(__dirname, '..', 'migrations', isCompiled ? '*.js' : '*.ts')],
     synchronize: false,

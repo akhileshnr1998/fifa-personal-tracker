@@ -50,6 +50,7 @@ describe('FixturesService', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      summary_fetched: false,
       updated_at: new Date(),
     },
     {
@@ -66,6 +67,7 @@ describe('FixturesService', () => {
       status: 'finished',
       home_score: 2,
       away_score: 1,
+      summary_fetched: false,
       updated_at: new Date(),
     },
   ];

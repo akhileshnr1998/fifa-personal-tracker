@@ -218,18 +218,125 @@ response.children[i]                   → one group (Group A … Group L)
 
 ---
 
-## 6. Future Phases — Additional ESPN Endpoints
+## 6. Match Summary Endpoint (Phase 8)
+
+**Used by:** `MatchSummaryService.fetchAndStore()` — called once per finished fixture, never again (`summary_fetched` flag).
+
+```http
+GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary
+  ?event={espn_event_id}
+```
+
+No API key required. `espn_event_id` is already stored as `fixtures.id`.
+
+**Guards before calling this endpoint:**
+
+| Guard | Check | Result if fails |
+| :--- | :--- | :--- |
+| Status guard | `fixture.status === 'finished'` | Return `{ available: false }` — no ESPN call |
+| Idempotency guard | `fixture.summary_fetched === false` | Return cached DB rows — no ESPN call |
+
+### 6.1 Response shape → DB mapping
+
+```
+response.boxscore.teams[i]                   → one team's stats row (match_stats)
+  .team.id                                   → match_stats.team_id
+  .statistics[k].name / .displayValue        → see stat mapping below
+
+response.scoringPlays[j]                     → one match event (match_events)
+  .team.id                                   → match_events.team_id
+  .clock.displayValue                        → match_events.minute  ("23'" → 23)
+  .type.text                                 → match_events.type  (see type mapping)
+  .athletesInvolved[0].displayName           → match_events.player_name
+  .athletesInvolved[1].displayName           → match_events.assist_name  (goals only)
+```
+
+### 6.2 Event type mapping
+
+| ESPN `type.text` | `match_events.type` |
+| :--- | :--- |
+| `Goal` | `goal` |
+| `Own Goal` | `own_goal` |
+| `Penalty - Goal` | `penalty_goal` |
+| `Penalty - Miss` / `Penalty - Saved` | `penalty_miss` |
+| `Yellow Card` | `yellow_card` |
+| `Red Card` | `red_card` |
+| `Yellow-Red Card` | `red_card` |
+
+### 6.3 Stat name mapping
+
+| ESPN `statistics[k].name` | `match_stats` column |
+| :--- | :--- |
+| `possessionPct` | `possession_pct` |
+| `totalShots` | `shots` |
+| `shotsOnTarget` | `shots_on_target` |
+| `corners` | `corners` |
+| `foulsCommitted` | `fouls` |
+| `yellowCards` | `yellow_cards` |
+| `redCards` | `red_cards` |
+| `offsides` | `offsides` |
+| `saves` | `saves` |
+
+### 6.4 Our API response
+
+```json
+{
+  "fixture_id": 760415,
+  "available": true,
+  "events": [
+    {
+      "type": "goal",
+      "minute": 23,
+      "team_id": 203,
+      "player_name": "Hirving Lozano",
+      "assist_name": "Chucky Lozano",
+      "is_extra_time": false
+    },
+    {
+      "type": "yellow_card",
+      "minute": 45,
+      "team_id": 467,
+      "player_name": "Percy Tau",
+      "assist_name": null,
+      "is_extra_time": false
+    }
+  ],
+  "stats": [
+    {
+      "team_id": 203,
+      "possession_pct": 58.3,
+      "shots": 12,
+      "shots_on_target": 5,
+      "corners": 6,
+      "fouls": 9,
+      "yellow_cards": 1,
+      "red_cards": 0,
+      "offsides": 2,
+      "saves": 3
+    }
+  ]
+}
+```
+
+Unfinished match response:
+```json
+{ "fixture_id": 760416, "available": false }
+```
+
+---
+
+## 7. Future Phases — Additional ESPN Endpoints
 
 | Widget | ESPN endpoint | Notes |
 | :--- | :--- | :--- |
 | Teams (Phase 5) | `/sports/soccer/fifa.world/teams` | Rosters via `/teams/{id}/roster` |
-| Hub scorers (Phase 2) | Derive from finished fixtures or ESPN news | TBD |
+| Hub scorers (Phase 2) | Derived from `match_events` table (Phase 8) | Goal scorers available once Phase 8 ships |
 
 All future widgets should follow the same on-demand refresh pattern.
 
 ---
 
-## 7. Implementation Notes
+## 8. Implementation Notes
 
 1. **Three-step sync** — `FixturesSyncService.syncFromEspn()` upserts `teams`, then `venues`, then `fixtures` with `home_team_id` / `away_team_id` / `venue_id` FKs.
 2. **No seed migration** — data hydrates from ESPN on first API request; no static seed file.
@@ -241,7 +348,7 @@ All future widgets should follow the same on-demand refresh pattern.
 
 ---
 
-## 8. Documentation Index
+## 9. Documentation Index
 
 | Topic | URL |
 | :--- | :--- |

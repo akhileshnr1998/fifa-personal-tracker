@@ -7,6 +7,7 @@ import * as Joi from 'joi';
 import { getTypeOrmOptions } from './database/typeorm.options';
 import { FixturesModule } from './fixtures/fixtures.module';
 import { HealthModule } from './health/health.module';
+import { MatchSummaryModule } from './match-summary/match-summary.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { StandingsModule } from './standings/standings.module';
 import { TeamsModule } from './teams/teams.module';
@@ -41,6 +42,7 @@ import { UserModule } from './users/user.module';
     }),
     FixturesModule,
     HealthModule,
+    MatchSummaryModule,
     TeamsModule,
     UserModule,
     NotificationsModule,

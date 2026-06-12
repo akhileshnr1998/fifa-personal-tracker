@@ -43,6 +43,7 @@ describe('fixtures.mapper', () => {
       status: 'finished',
       home_score: 2,
       away_score: 1,
+      summary_fetched: false,
       updated_at: new Date(),
     };
 
@@ -72,6 +73,7 @@ describe('fixtures.mapper', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      summary_fetched: false,
       updated_at: new Date(),
     };
     const earlier: FixtureEntity = {
@@ -88,6 +90,7 @@ describe('fixtures.mapper', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      summary_fetched: false,
       updated_at: new Date(),
     };
 

@@ -8,7 +8,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-12 — Security & quality sprint (S1–S8): helmet + CSP, global exception filter, expired push subscription cleanup, CronSecretGuard, Joi env validation, DATABASE_SSL env var, health endpoint, SettingsPage decomposition
+> **Last updated:** 2026-06-12 — Phase 8 added: Match Summary on-demand fetch with status + idempotency guards
 
 ### Phase overview
 
@@ -22,6 +22,7 @@ This document serves as the complete technical architecture and execution roadma
 | **6** | Live Standings Widget | `[x]` Code complete — deploy pending |
 | **7** | Settings + Notifications | `[x]` Code complete — deploy pending |
 | **7.1** | Reminder timing preference | `[x]` Code complete — deploy pending |
+| **8** | Match Summary (post-match detail) | `[ ]` In progress |
 
 ---
 
@@ -269,6 +270,37 @@ Users choose **how far ahead of kickoff** they receive a push alert. Default is 
 | 1 day before | `1440` | Calendar-style reminder |
 
 - [ ] **Phase 7.1 signed off** — timing preference live in production _(pending migration + deploy)_
+
+
+### Phase 8 — Match Summary (Post-Match Detail)
+
+Fetch rich post-match data (goal scorers, cards, match stats) from ESPN's per-event summary endpoint — **only for finished matches, only once per fixture**. Two guards prevent wasted ESPN calls:
+
+1. **Status guard** — only fetches if `fixture.status === 'finished'`; returns `{ available: false }` otherwise.
+2. **Idempotency guard** — once a summary is stored, `fixtures.summary_fetched = true` and ESPN is never called again for that fixture.
+
+**Database**
+
+- [ ] `fixtures.summary_fetched` column (`BOOLEAN NOT NULL DEFAULT FALSE`) — idempotency flag (migration `1749650000000`)
+- [ ] `match_events` table — goals, cards, penalties with player name, minute, team (migration `1749650100000`)
+- [ ] `match_stats` table — per-team stats (possession %, shots, corners, fouls, saves, cards, offsides) with UNIQUE(`fixture_id`, `team_id`) (migration `1749650200000`)
+- [ ] Migrations applied in Neon
+
+**Backend**
+
+- [ ] `MatchEventEntity` + `MatchStatEntity` TypeORM entities
+- [ ] `MatchSummaryService` — applies both guards, fetches ESPN `/summary?event={id}`, stores events + stats, flips `summary_fetched`; all in a single DB transaction
+- [ ] `GET /api/fixtures/:id/summary` — returns `{ available: false }` for unfinished / future matches; returns cached data after first fetch
+- [ ] `MatchSummaryModule` registered in `AppModule`
+- [ ] New entities registered in `typeorm.options.ts`
+
+**ESPN source:**
+```
+GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event={espn_event_id}
+```
+No API key required. Event ID is already stored as `fixtures.id`.
+
+- [ ] **Phase 8 signed off**
 
 ---
 

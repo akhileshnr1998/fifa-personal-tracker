@@ -233,6 +233,7 @@ describe('FixturesSyncService', () => {
         status: 'scheduled',
         home_score: null,
         away_score: null,
+        summary_fetched: false,
         updated_at: new Date(),
       },
     ]);

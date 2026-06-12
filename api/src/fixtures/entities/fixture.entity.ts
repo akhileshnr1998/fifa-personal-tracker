@@ -59,6 +59,9 @@ export class FixtureEntity {
   @Column({ type: 'int', nullable: true })
   away_score!: number | null;
 
+  @Column({ type: 'boolean', default: false })
+  summary_fetched!: boolean;
+
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date;
 }
