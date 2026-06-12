@@ -54,7 +54,6 @@ export class ReminderService {
       windowStart.getTime() + CRON_SLACK_MINUTES * 60 * 1000,
     );
 
-    // Query 1: fixtures in this reminder window
     const upcomingFixtures = await this.fixturesRepository.find({
       where: { match_date_time: Between(windowStart, windowEnd) },
       relations: ['home_team', 'away_team'],
@@ -69,7 +68,6 @@ export class ReminderService {
       ...new Set(upcomingFixtures.flatMap((f) => [f.home_team_id, f.away_team_id])),
     ];
 
-    // Query 2: all eligible users across all fixtures in this bucket (one query)
     const followedEntries = await this.followedTeamsRepository
       .createQueryBuilder('ft')
       .innerJoinAndSelect('ft.user', 'user')
@@ -81,7 +79,6 @@ export class ReminderService {
       })
       .getMany();
 
-    // Query 3: all already-dispatched pairs for these fixtures (one query)
     const alreadySent = await this.reminderDispatchesRepository.find({
       where: { fixture_id: In(fixtureIds) },
       select: ['user_id', 'fixture_id'],
@@ -90,7 +87,6 @@ export class ReminderService {
       alreadySent.map((d) => `${d.user_id}:${d.fixture_id}`),
     );
 
-    // Build team → users lookup (deduplicated by userId)
     const teamUsers = new Map<number, Map<string, UserEntity>>();
     for (const entry of followedEntries) {
       if (!teamUsers.has(entry.team_id)) {
@@ -102,7 +98,6 @@ export class ReminderService {
     let notificationsSent = 0;
 
     for (const fixture of upcomingFixtures) {
-      // Collect unique eligible users for this fixture
       const eligible = new Map<string, UserEntity>();
       for (const teamId of [fixture.home_team_id, fixture.away_team_id]) {
         const users = teamUsers.get(teamId);

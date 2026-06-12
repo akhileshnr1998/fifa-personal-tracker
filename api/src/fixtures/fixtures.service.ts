@@ -33,6 +33,11 @@ export class FixturesService {
   }
 
   private runSync(): Promise<void> {
+    // Single-flight dedup: a second concurrent request reuses the in-progress
+    // promise so ESPN is called at most once per Node process per trigger.
+    // On a multi-process deployment the upsert in FixturesSyncService is
+    // idempotent (ON CONFLICT DO UPDATE), so concurrent runs stay safe at the
+    // DB layer even without a cross-process lock.
     if (!this.syncPromise) {
       this.syncPromise = this.fixturesSyncService
         .syncFromEspn()

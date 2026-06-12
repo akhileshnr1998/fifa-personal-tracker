@@ -14,6 +14,11 @@ export interface TeamPickerOption {
 
 export async function fetchTeamPickerOptions(): Promise<TeamPickerOption[]> {
   const response = await fetch(buildUrl('/api/teams/names'));
+
+  if (response.status === 429) {
+    throw new Error('Too many requests — please wait a moment and try again.');
+  }
+
   if (!response.ok) {
     throw new Error('Unable to load teams');
   }
@@ -58,6 +63,10 @@ export async function saveUserSettings(
       subscription: preferences.pushNotificationsEnabled ? subscription : null,
     }),
   });
+
+  if (response.status === 429) {
+    throw new Error('Too many requests — please wait a moment and try again.');
+  }
 
   if (!response.ok) {
     throw new Error('Unable to save settings');

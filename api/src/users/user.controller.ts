@@ -7,6 +7,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import { SaveSettingsDto } from './dto/save-settings.dto';
 import { UserService } from './user.service';
 
@@ -24,6 +25,7 @@ export class UserController {
   }
 
   @Put('settings')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async saveSettings(
     @Headers('x-user-id') userId: string | undefined,
     @Body() dto: SaveSettingsDto,
