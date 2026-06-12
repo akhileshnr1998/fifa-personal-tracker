@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -6,6 +7,10 @@ async function bootstrap() {
   const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
   const configuredOrigins = corsOrigin.split(',').map((origin) => origin.trim());
   const isProduction = process.env.NODE_ENV === 'production';
+
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+  );
 
   app.enableCors({
     origin: (

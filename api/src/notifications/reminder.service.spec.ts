@@ -3,7 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
-import { UserEntity } from '../users/entities/user.entity';
 import { NotificationService } from './notification.service';
 import { ReminderService } from './reminder.service';
 
@@ -15,7 +14,11 @@ describe('ReminderService', () => {
   const followedTeamsRepository = {
     createQueryBuilder: jest.fn(),
   };
-  const reminderDispatchesRepository = { find: jest.fn(), save: jest.fn() };
+  const reminderDispatchesRepository = {
+    find: jest.fn(),
+    delete: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -31,10 +34,6 @@ describe('ReminderService', () => {
         {
           provide: getRepositoryToken(FixtureEntity),
           useValue: fixturesRepository,
-        },
-        {
-          provide: getRepositoryToken(UserEntity),
-          useValue: {},
         },
         {
           provide: getRepositoryToken(FollowedTeamEntity),
@@ -72,13 +71,14 @@ describe('ReminderService', () => {
   });
 
   it('dispatches push for users matching the reminder lead-time bucket', async () => {
-    const queryBuilder = {
+    const followedQueryBuilder = {
       innerJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([
         {
           user_id: 'user-1',
+          team_id: 203,
           user: {
             id: 'user-1',
             push_subscription: {
@@ -92,15 +92,27 @@ describe('ReminderService', () => {
       ]),
     };
 
-    followedTeamsRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+    // Mock for insert().into().values().orIgnore().returning().execute()
+    const insertQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [{ user_id: 'user-1' }] }),
+    };
+
+    followedTeamsRepository.createQueryBuilder.mockReturnValue(
+      followedQueryBuilder,
+    );
+    reminderDispatchesRepository.createQueryBuilder.mockReturnValue(
+      insertQueryBuilder,
+    );
     reminderDispatchesRepository.find.mockResolvedValue([]);
-    reminderDispatchesRepository.save.mockResolvedValue(undefined);
 
     fixturesRepository.find.mockImplementation(({ where }) => {
       const matchDate = where.match_date_time._value?.[0] as Date | undefined;
-      if (!matchDate) {
-        return Promise.resolve([]);
-      }
+      if (!matchDate) return Promise.resolve([]);
 
       const minutesAhead = Math.round(
         (matchDate.getTime() - Date.now()) / 60000,
@@ -131,9 +143,61 @@ describe('ReminderService', () => {
         body: expect.stringContaining('~5 minutes'),
       }),
     );
-    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+    expect(followedQueryBuilder.andWhere).toHaveBeenCalledWith(
       'user.reminder_minutes_before = :reminderMinutes',
       { reminderMinutes: 5 },
     );
+  });
+
+  it('skips push when dispatch record already exists (concurrent cron guard)', async () => {
+    const followedQueryBuilder = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          user_id: 'user-1',
+          team_id: 203,
+          user: {
+            id: 'user-1',
+            push_subscription: { endpoint: 'https://push.example/abc', expirationTime: null, keys: { p256dh: 'k', auth: 'a' } },
+            reminder_minutes_before: 5,
+          },
+        },
+      ]),
+    };
+
+    // ON CONFLICT DO NOTHING — returns empty raw (record already existed)
+    const insertQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [] }),
+    };
+
+    followedTeamsRepository.createQueryBuilder.mockReturnValue(followedQueryBuilder);
+    reminderDispatchesRepository.createQueryBuilder.mockReturnValue(insertQueryBuilder);
+    reminderDispatchesRepository.find.mockResolvedValue([]);
+
+    fixturesRepository.find.mockImplementation(({ where }) => {
+      const matchDate = where.match_date_time._value?.[0] as Date | undefined;
+      if (!matchDate) return Promise.resolve([]);
+      const minutesAhead = Math.round((matchDate.getTime() - Date.now()) / 60000);
+      if (minutesAhead >= 4 && minutesAhead <= 6) {
+        return Promise.resolve([{
+          id: 101, home_team_id: 203, away_team_id: 10,
+          home_team: { id: 203, name: 'Mexico' }, away_team: { id: 10, name: 'Argentina' },
+          match_date_time: matchDate,
+        }]);
+      }
+      return Promise.resolve([]);
+    });
+
+    const result = await service.checkAndDispatchReminders();
+
+    expect(result.notificationsSent).toBe(0);
+    expect(notificationService.sendPush).not.toHaveBeenCalled();
   });
 });

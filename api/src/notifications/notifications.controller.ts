@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ReminderService } from './reminder.service';
 
-@Controller('api/fixtures')
+@Controller('api/notifications')
 export class NotificationsController {
   constructor(
     private readonly reminderService: ReminderService,

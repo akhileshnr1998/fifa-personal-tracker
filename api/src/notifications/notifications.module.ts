@@ -3,19 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
-import { UserEntity } from '../users/entities/user.entity';
 import { NotificationService } from './notification.service';
 import { NotificationsController } from './notifications.controller';
 import { ReminderService } from './reminder.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      FixtureEntity,
-      UserEntity,
-      FollowedTeamEntity,
-      ReminderDispatchEntity,
-    ]),
+    TypeOrmModule.forFeature([FixtureEntity, FollowedTeamEntity, ReminderDispatchEntity]),
   ],
   controllers: [NotificationsController],
   providers: [NotificationService, ReminderService],

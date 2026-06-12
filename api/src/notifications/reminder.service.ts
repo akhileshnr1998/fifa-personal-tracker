@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Between, In, Repository } from 'typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
@@ -20,8 +20,6 @@ export class ReminderService {
   constructor(
     @InjectRepository(FixtureEntity)
     private readonly fixturesRepository: Repository<FixtureEntity>,
-    @InjectRepository(UserEntity)
-    private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(FollowedTeamEntity)
     private readonly followedTeamsRepository: Repository<FollowedTeamEntity>,
     @InjectRepository(ReminderDispatchEntity)
@@ -38,72 +36,42 @@ export class ReminderService {
     let notificationsSent = 0;
 
     for (const reminderMinutes of ALLOWED_REMINDER_MINUTES) {
-      const windowStart = new Date(
-        now.getTime() + reminderMinutes * 60 * 1000,
-      );
-      const windowEnd = new Date(
-        windowStart.getTime() + CRON_SLACK_MINUTES * 60 * 1000,
-      );
-
-      const upcomingFixtures = await this.fixturesRepository.find({
-        where: {
-          match_date_time: Between(windowStart, windowEnd),
-        },
-        relations: ['home_team', 'away_team'],
-      });
-
-      for (const fixture of upcomingFixtures) {
-        const teamIds = [fixture.home_team_id, fixture.away_team_id];
-        const recipients = await this.findEligibleRecipients(
-          teamIds,
-          fixture.id,
-          reminderMinutes,
-        );
-
-        for (const user of recipients) {
-          if (!user.push_subscription) {
-            continue;
-          }
-
-          try {
-            await this.notificationService.sendPush(user.push_subscription, {
-              title: 'Match reminder',
-              body: formatReminderPushBody(
-                fixture.home_team.name,
-                fixture.away_team.name,
-                reminderMinutes,
-              ),
-              url: '/',
-            });
-
-            await this.reminderDispatchesRepository.save({
-              user_id: user.id,
-              fixture_id: fixture.id,
-            });
-
-            notificationsSent += 1;
-          } catch (error) {
-            this.logger.warn(
-              `Failed to send reminder to user ${user.id} for fixture ${fixture.id}`,
-              error,
-            );
-          }
-        }
-      }
+      const count = await this.dispatchBucket(now, reminderMinutes);
+      notificationsSent += count;
     }
 
     return { notificationsSent };
   }
 
-  private async findEligibleRecipients(
-    teamIds: number[],
-    fixtureId: number,
+  private async dispatchBucket(
+    now: Date,
     reminderMinutes: ReminderMinutes,
-  ): Promise<UserEntity[]> {
-    const followed = await this.followedTeamsRepository
+  ): Promise<number> {
+    const windowStart = new Date(now.getTime() + reminderMinutes * 60 * 1000);
+    const windowEnd = new Date(
+      windowStart.getTime() + CRON_SLACK_MINUTES * 60 * 1000,
+    );
+
+    // Query 1: fixtures in this reminder window
+    const upcomingFixtures = await this.fixturesRepository.find({
+      where: { match_date_time: Between(windowStart, windowEnd) },
+      relations: ['home_team', 'away_team'],
+    });
+
+    if (upcomingFixtures.length === 0) {
+      return 0;
+    }
+
+    const fixtureIds = upcomingFixtures.map((f) => f.id);
+    const allTeamIds = [
+      ...new Set(upcomingFixtures.flatMap((f) => [f.home_team_id, f.away_team_id])),
+    ];
+
+    // Query 2: all eligible users across all fixtures in this bucket (one query)
+    const followedEntries = await this.followedTeamsRepository
       .createQueryBuilder('ft')
       .innerJoinAndSelect('ft.user', 'user')
-      .where('ft.team_id IN (:...teamIds)', { teamIds })
+      .where('ft.team_id IN (:...allTeamIds)', { allTeamIds })
       .andWhere('user.push_notifications_enabled = true')
       .andWhere('user.push_subscription IS NOT NULL')
       .andWhere('user.reminder_minutes_before = :reminderMinutes', {
@@ -111,19 +79,90 @@ export class ReminderService {
       })
       .getMany();
 
+    // Query 3: all already-dispatched pairs for these fixtures (one query)
     const alreadySent = await this.reminderDispatchesRepository.find({
-      where: { fixture_id: fixtureId },
-      select: ['user_id'],
+      where: { fixture_id: In(fixtureIds) },
+      select: ['user_id', 'fixture_id'],
     });
-    const sentUserIds = new Set(alreadySent.map((entry) => entry.user_id));
+    const dispatchedSet = new Set(
+      alreadySent.map((d) => `${d.user_id}:${d.fixture_id}`),
+    );
 
-    const uniqueUsers = new Map<string, UserEntity>();
-    for (const entry of followed) {
-      if (!sentUserIds.has(entry.user_id)) {
-        uniqueUsers.set(entry.user_id, entry.user);
+    // Build team → users lookup (deduplicated by userId)
+    const teamUsers = new Map<number, Map<string, UserEntity>>();
+    for (const entry of followedEntries) {
+      if (!teamUsers.has(entry.team_id)) {
+        teamUsers.set(entry.team_id, new Map());
+      }
+      teamUsers.get(entry.team_id)!.set(entry.user_id, entry.user);
+    }
+
+    let notificationsSent = 0;
+
+    for (const fixture of upcomingFixtures) {
+      // Collect unique eligible users for this fixture
+      const eligible = new Map<string, UserEntity>();
+      for (const teamId of [fixture.home_team_id, fixture.away_team_id]) {
+        const users = teamUsers.get(teamId);
+        if (!users) continue;
+        for (const [userId, user] of users) {
+          if (!dispatchedSet.has(`${userId}:${fixture.id}`)) {
+            eligible.set(userId, user);
+          }
+        }
+      }
+
+      for (const user of eligible.values()) {
+        if (!user.push_subscription) continue;
+
+        // F6: write dispatch record BEFORE sending push (atomic dedup guard).
+        // ON CONFLICT DO NOTHING — if the record already exists (concurrent cron
+        // run), the RETURNING clause returns no rows and we skip the push.
+        const insertResult = await this.reminderDispatchesRepository
+          .createQueryBuilder()
+          .insert()
+          .into(ReminderDispatchEntity)
+          .values({ user_id: user.id, fixture_id: fixture.id })
+          .orIgnore()
+          .returning('user_id')
+          .execute();
+
+        if (insertResult.raw.length === 0) {
+          // Row already existed — another cron run already dispatched this.
+          continue;
+        }
+
+        try {
+          await this.notificationService.sendPush(user.push_subscription, {
+            title: 'Match reminder',
+            body: formatReminderPushBody(
+              fixture.home_team.name,
+              fixture.away_team.name,
+              reminderMinutes,
+            ),
+            url: '/',
+          });
+          notificationsSent += 1;
+        } catch (error) {
+          // Push failed — remove the pre-written dispatch record so the next
+          // cron cycle can retry delivery.
+          await this.reminderDispatchesRepository
+            .delete({ user_id: user.id, fixture_id: fixture.id })
+            .catch((deleteError) => {
+              this.logger.warn(
+                `Failed to rollback dispatch record for user ${user.id} / fixture ${fixture.id}`,
+                deleteError,
+              );
+            });
+
+          this.logger.warn(
+            `Push failed for user ${user.id} / fixture ${fixture.id} — dispatch record removed for retry`,
+            error,
+          );
+        }
       }
     }
 
-    return [...uniqueUsers.values()];
+    return notificationsSent;
   }
 }
