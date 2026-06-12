@@ -1,5 +1,15 @@
 import { fetchVapidPublicKey, type PushSubscriptionPayload } from './api';
 
+// Module-level singletons. Null until warmupPush() or subscribeToPush() initialises them.
+let _swReadyPromise: Promise<ServiceWorkerRegistration> | null = null;
+let _vapidKeyPromise: Promise<string> | null = null;
+
+/** Only call this in unit tests to reset singleton state between test cases. */
+export function _resetPushSingletons(): void {
+  _swReadyPromise = null;
+  _vapidKeyPromise = null;
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -35,23 +45,60 @@ function formatSubscription(
   };
 }
 
+/**
+ * Eagerly starts Service Worker registration and the VAPID key fetch so they
+ * are resolved before the user reaches the Settings page.
+ *
+ * Safe to call before React mounts. Idempotent — calling more than once is a
+ * no-op. Errors are swallowed; subscribeToPush() will surface them if push is
+ * actually requested.
+ */
+export function warmupPush(): void {
+  if (!('serviceWorker' in navigator)) return;
+
+  if (_swReadyPromise === null) {
+    const p = registerServiceWorker().then(() => navigator.serviceWorker.ready);
+    _swReadyPromise = p;
+    // Prevent unhandled-rejection; reset so subscribeToPush() can retry.
+    p.catch(() => {
+      if (_swReadyPromise === p) _swReadyPromise = null;
+    });
+  }
+
+  if (_vapidKeyPromise === null) {
+    const q = fetchVapidPublicKey();
+    _vapidKeyPromise = q;
+    q.catch(() => {
+      if (_vapidKeyPromise === q) _vapidKeyPromise = null;
+    });
+  }
+}
+
 export async function subscribeToPush(): Promise<PushSubscriptionPayload> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
     throw new Error('Notification permission was not granted.');
   }
 
-  const registration = await registerServiceWorker();
-  await navigator.serviceWorker.ready;
+  // Re-use pre-warmed SW promise, or start fresh (fallback for tests / old browsers).
+  if (_swReadyPromise === null) {
+    _swReadyPromise = registerServiceWorker().then(
+      () => navigator.serviceWorker.ready,
+    );
+  }
+  const registration = await _swReadyPromise;
 
-  // Re-use an active subscription when one already exists (M5).
-  // This avoids unnecessarily re-subscribing on every settings save.
+  // Re-use an active subscription when one already exists.
   const existing = await registration.pushManager.getSubscription();
   if (existing) {
     return formatSubscription(existing);
   }
 
-  const publicKey = await fetchVapidPublicKey();
+  // Re-use pre-warmed VAPID key promise, or fetch fresh.
+  if (_vapidKeyPromise === null) {
+    _vapidKeyPromise = fetchVapidPublicKey();
+  }
+  const publicKey = await _vapidKeyPromise;
   if (!publicKey) {
     throw new Error('Push notifications are not configured on the server.');
   }
