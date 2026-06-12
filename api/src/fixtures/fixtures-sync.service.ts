@@ -12,10 +12,9 @@ import { FixtureEntity } from './entities/fixture.entity';
 import { EspnCompetition, EspnEvent, EspnScoreboardResponse } from './espn.types';
 import { getVenueSource, mapEspnEvents } from './espn.mapper';
 
-const ESPN_SCOREBOARD_URL =
-  'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const DEFAULT_ESPN_DATE_RANGE = '20260611-20260719';
-const ESPN_FETCH_LIMIT = 200;
+const DEFAULT_ESPN_LEAGUE_SLUG = 'fifa.world';
+const DEFAULT_ESPN_FETCH_LIMIT = 200;
 
 @Injectable()
 export class FixturesSyncService {
@@ -33,14 +32,19 @@ export class FixturesSyncService {
   ) {}
 
   async syncFromEspn(): Promise<FixtureEntity[]> {
+    const slug =
+      this.configService.get<string>('ESPN_LEAGUE_SLUG') ?? DEFAULT_ESPN_LEAGUE_SLUG;
     const dateRange =
-      this.configService.get<string>('ESPN_WC_DATE_RANGE') ??
-      DEFAULT_ESPN_DATE_RANGE;
+      this.configService.get<string>('ESPN_WC_DATE_RANGE') ?? DEFAULT_ESPN_DATE_RANGE;
+    const limit =
+      this.configService.get<number>('ESPN_FETCH_LIMIT') ?? DEFAULT_ESPN_FETCH_LIMIT;
+
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/scoreboard`;
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get<EspnScoreboardResponse>(ESPN_SCOREBOARD_URL, {
-          params: { dates: dateRange, limit: ESPN_FETCH_LIMIT },
+        this.httpService.get<EspnScoreboardResponse>(url, {
+          params: { dates: dateRange, limit },
         }),
       );
 

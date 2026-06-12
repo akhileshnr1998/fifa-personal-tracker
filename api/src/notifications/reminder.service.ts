@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, Repository } from 'typeorm';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
@@ -17,6 +18,9 @@ import { ExpiredSubscriptionError, NotificationService } from './notification.se
 export class ReminderService {
   private readonly logger = new Logger(ReminderService.name);
 
+  private readonly appBaseUrl: string;
+  private readonly cronSlackMinutes: number;
+
   constructor(
     @InjectRepository(FixtureEntity)
     private readonly fixturesRepository: Repository<FixtureEntity>,
@@ -27,7 +31,12 @@ export class ReminderService {
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
     private readonly notificationService: NotificationService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.appBaseUrl = this.configService.get<string>('APP_BASE_URL') ?? '';
+    this.cronSlackMinutes =
+      this.configService.get<number>('CRON_SLACK_MINUTES') ?? CRON_SLACK_MINUTES;
+  }
 
   async checkAndDispatchReminders(): Promise<{ notificationsSent: number }> {
     if (!this.notificationService.isConfigured()) {
@@ -51,7 +60,7 @@ export class ReminderService {
   ): Promise<number> {
     const windowStart = new Date(now.getTime() + reminderMinutes * 60 * 1000);
     const windowEnd = new Date(
-      windowStart.getTime() + CRON_SLACK_MINUTES * 60 * 1000,
+      windowStart.getTime() + this.cronSlackMinutes * 60 * 1000,
     );
 
     const upcomingFixtures = await this.fixturesRepository.find({
@@ -137,7 +146,7 @@ export class ReminderService {
               fixture.away_team.name,
               reminderMinutes,
             ),
-            url: '/',
+            url: `${this.appBaseUrl}/`,
           });
           notificationsSent += 1;
         } catch (error) {

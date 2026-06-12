@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { of, throwError } from 'rxjs';
@@ -112,6 +113,7 @@ describe('MatchSummaryService', () => {
       providers: [
         MatchSummaryService,
         { provide: HttpService, useValue: httpService },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
         { provide: DataSource, useValue: dataSource },
         { provide: getRepositoryToken(FixtureEntity), useValue: fixturesRepository },
         { provide: getRepositoryToken(MatchEventEntity), useValue: eventsRepository },

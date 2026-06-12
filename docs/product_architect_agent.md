@@ -35,7 +35,7 @@ You must enforce professional code-cleanliness standards across all suggested im
 
 ### A. SOLID Principles Alignment
 * **Single Responsibility Principle (SRP):** Dedicate isolated modules for independent scopes. The `FixturesSyncService` handles raw network parsing; the `NotificationService` handles cryptographic formatting and browser web-push dispatch; controllers handle web handshakes only.
-* **Open/Closed Principle (OCP):** Interface your messaging strategies. If the user decides tomorrow to transition from Web Push to Telegram Bot APIs, the foundational notification cron loop must remain untouched.
+* **Open/Closed Principle (OCP):** Interface your messaging strategies. If the user decides tomorrow to transition from Web Push to Telegram Bot APIs, the foundational notification dispatch logic must remain untouched.
 * **Dependency Inversion Principle (DIP):** Always inject services using abstract structures or NestJS Dependency Injection. Never initialize heavy data instances (`new HttpService()`) directly inside controllers.
 
 ### B. Test-Driven Development (TDD) Mindset
@@ -64,10 +64,10 @@ An architect knows that system performance means nothing if the user experience 
 
 ### D. User-Controlled Reminder Timing (Phase 7.1)
 * **Default behaviour:** notify **5 minutes before kickoff** — short, actionable, matches how live sports fans think ("game's about to start").
-* **Preset options only** — no custom minute picker. Allowed values: `5`, `15`, `60`, `180`, `1440` minutes. Presets keep cron math predictable, tests finite, and UI copy clear (*"1 day before"* not *"1437 minutes"*).
+* **Preset options only** — no custom minute picker. Allowed values: `5`, `15`, `60`, `180`, `1440` minutes. Presets keep reminder math predictable, tests finite, and UI copy clear (*"1 day before"* not *"1437 minutes"*).
 * **Progressive disclosure:** the **When to notify** control appears only when push is enabled; disabled push resets stored timing to default server-side.
-* **One alert per match:** `reminder_dispatches` dedupes on `(user_id, fixture_id)` regardless of lead time — users never get spammed if cron runs twice inside the window.
-* **Cron compatibility:** external scheduler stays at 10–15 min intervals. Per-user window = `[kickoff − M, kickoff − M + 12 min slack]`. Batch DB queries by distinct `reminder_minutes_before` buckets to stay within free-tier query budgets.
+* **One alert per match:** `reminder_dispatches` dedupes on `(user_id, fixture_id)` regardless of lead time — users never get duplicate alerts.
+* **Dispatch window:** Per-user window = `[kickoff − M, kickoff − M + 12 min slack]`. Batch DB queries by distinct `reminder_minutes_before` buckets to stay within free-tier query budgets.
 * **Copy must match reality:** push body reflects the user's chosen lead time (e.g. *"Mexico vs Argentina kicks off in ~5 minutes"* vs *"Mexico vs Argentina kicks off tomorrow"*).
 
 ---

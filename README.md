@@ -80,7 +80,7 @@ cd web && npm test
 
 | Layer | Where | Notes |
 | :--- | :--- | :--- |
-| API | Render (Root Dir: `api`) | Set `DATABASE_URL`, `VAPID_*`, `CRON_SECRET` env vars. Health check: `GET /api/health`. |
+| API | Render (Root Dir: `api`) | Set `DATABASE_URL`, `VAPID_*` env vars. Health check: `GET /api/health`. |
 | Web | Vercel / Netlify | Set `VITE_API_BASE_URL` to your Render API URL. |
 
 ---
@@ -93,9 +93,7 @@ Generate VAPID keys and add to `api/.env`:
 npx web-push generate-vapid-keys
 ```
 
-Required env vars: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`.
-
-Schedule `POST https://<api>/api/notifications/check-reminders` every 10–15 min on [Cron-Job.org](https://cron-job.org) with header `X-Cron-Secret: <CRON_SECRET>`.
+Required env vars: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
 
 Users configure notification timing (5 min → 1 day before kickoff) and followed teams from the `/settings` page.
 
@@ -126,7 +124,6 @@ flowchart TD
     end
 
     ESPN["ESPN Scoreboard\n(public JSON)"]
-    CRON["Cron-Job.org\n(every 10–15 min)"]
 
     UI -- "GET /api/fixtures" --> FC
     FC -- "DB empty or ?refresh=true" --> FS
@@ -138,8 +135,6 @@ flowchart TD
     UI -- "PUT /api/user/settings\n(follow teams, push prefs)" --> U
     UI -- "POST /api/notifications/subscribe" --> NS
     NS -- "store subscription" --> U
-
-    CRON -- "POST /api/notifications/check-reminders\n(X-Cron-Secret)" --> NS
     NS -- "query upcoming fixtures\n+ followed teams" --> FX & U
     NS -- "dedup insert" --> RD
     NS -- "VAPID push" --> SW
@@ -150,7 +145,7 @@ flowchart TD
 
 ## Key design decisions
 
-- **On-demand hydration:** fixtures are fetched from ESPN only when the DB is empty or `?refresh=true` is passed — no background cron for data.
+- **On-demand hydration:** fixtures are fetched from ESPN only when the DB is empty or `?refresh=true` is passed — always user-triggered.
 - **Normalized schema:** `teams` and `venues` are lookup tables; fixtures and followed-team preferences reference their IDs.
 - **One push per match:** `reminder_dispatches` deduplicates on `(user_id, fixture_id)` so no duplicate alerts.
 - **Zero-cost infra:** Web Push (VAPID) only — no SMS, no paid notification gateway.

@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
@@ -13,8 +14,7 @@ import {
 import { GroupStandingEntity } from './entities/group-standing.entity';
 import { TournamentGroupEntity } from './entities/tournament-group.entity';
 
-const ESPN_STANDINGS_URL =
-  'https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings';
+const DEFAULT_ESPN_LEAGUE_SLUG = 'fifa.world';
 
 function getStat(stats: EspnStandingStat[] | undefined, name: string): number {
   if (!stats) return 0;
@@ -30,6 +30,7 @@ export class StandingsSyncService {
 
   constructor(
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
     @InjectRepository(TournamentGroupEntity)
     private readonly groupsRepository: Repository<TournamentGroupEntity>,
     @InjectRepository(GroupStandingEntity)
@@ -39,9 +40,13 @@ export class StandingsSyncService {
   ) {}
 
   async syncFromEspn(): Promise<void> {
+    const slug =
+      this.configService.get<string>('ESPN_LEAGUE_SLUG') ?? DEFAULT_ESPN_LEAGUE_SLUG;
+    const url = `https://site.api.espn.com/apis/v2/sports/soccer/${slug}/standings`;
+
     try {
       const response = await firstValueFrom(
-        this.httpService.get<EspnStandingsResponse>(ESPN_STANDINGS_URL),
+        this.httpService.get<EspnStandingsResponse>(url),
       );
 
       const groups = response.data?.children ?? [];

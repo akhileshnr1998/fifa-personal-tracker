@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { firstValueFrom } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
@@ -18,8 +19,7 @@ import {
   EspnSummaryResponse,
 } from './espn-summary.types';
 
-const ESPN_SUMMARY_BASE =
-  'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary';
+const DEFAULT_ESPN_LEAGUE_SLUG = 'fifa.world';
 
 const EVENT_TYPE_MAP: Record<string, MatchEventType> = {
   'Goal': 'goal',
@@ -65,8 +65,11 @@ export class MatchSummaryService {
     Promise<MatchSummaryResponseDto | MatchSummaryUnavailableDto>
   >();
 
+  private readonly espnSummaryBase: string;
+
   constructor(
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
     @InjectRepository(FixtureEntity)
     private readonly fixturesRepository: Repository<FixtureEntity>,
@@ -74,7 +77,11 @@ export class MatchSummaryService {
     private readonly eventsRepository: Repository<MatchEventEntity>,
     @InjectRepository(MatchStatEntity)
     private readonly statsRepository: Repository<MatchStatEntity>,
-  ) {}
+  ) {
+    const slug =
+      this.configService.get<string>('ESPN_LEAGUE_SLUG') ?? DEFAULT_ESPN_LEAGUE_SLUG;
+    this.espnSummaryBase = `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/summary`;
+  }
 
   async getSummary(
     fixtureId: number,
@@ -114,7 +121,7 @@ export class MatchSummaryService {
     let espnData: EspnSummaryResponse;
     try {
       const response = await firstValueFrom(
-        this.httpService.get<EspnSummaryResponse>(ESPN_SUMMARY_BASE, {
+        this.httpService.get<EspnSummaryResponse>(this.espnSummaryBase, {
           params: { event: fixture.id },
         }),
       );

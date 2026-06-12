@@ -3,7 +3,7 @@
 // abandoned — localStorage quota is reclaimed on the next writeCache call.
 const CACHE_VERSION = 1;
 const CACHE_PREFIX = `fifa_cache_v${CACHE_VERSION}_`;
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — stale after a full day
+const TTL_MS = Number(import.meta.env.VITE_CACHE_TTL_HOURS ?? 24) * 60 * 60 * 1000;
 
 // Shared retry config for all data-fetching hooks.
 export const RETRY_DELAYS_MS = [5_000, 15_000, 30_000] as const;

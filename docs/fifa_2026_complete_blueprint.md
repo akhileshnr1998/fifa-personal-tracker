@@ -204,8 +204,7 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] VAPID keys generated and configured in `api/.env` _(manual)_
 - [x] Web Push dispatch on reminder cron (batch queries, atomic dispatch — see Production Hardening F5/F6)
 - [ ] ~~Twilio SMS integration~~ _(deferred — Web Push only, $0 cost)_
-- [x] `POST /api/notifications/check-reminders` cron endpoint (protected by `X-Cron-Secret`)
-- [ ] Cron-Job.org scheduler configured (10–15 min interval) _(manual post-deploy)_
+- [x] `POST /api/notifications/check-reminders` endpoint (protected by `X-Cron-Secret`)
 
 **Frontend — Settings (`src/features/settings/`)**
 
@@ -664,7 +663,7 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 #### 4. Match Alert Dispatched Query (Automated Task Input)
 * **Endpoint:** `POST /api/notifications/check-reminders`
 * **Auth:** `X-Cron-Secret` header must match the `CRON_SECRET` env var. Returns `401` otherwise.
-* **Description:** Executed by an external scheduler (e.g., Cron-Job.org) every **10–15 minutes**. For each user with `push_notifications_enabled = true` and a stored `push_subscription`, finds followed-team fixtures whose kickoff falls inside that user's **personal reminder window**, then dispatches **one Web Push per user per fixture** (deduped via `reminder_dispatches`).
+* **Description:** For each user with `push_notifications_enabled = true` and a stored `push_subscription`, finds followed-team fixtures whose kickoff falls inside that user's **personal reminder window**, then dispatches **one Web Push per user per fixture** (deduped via `reminder_dispatches`).
 * **Per-user reminder window (Phase 7.1):**
   * Let `M` = `users.reminder_minutes_before` (default `5`).
   * Let `S` = cron slack (12 minutes — covers 10–15 min scheduler interval).
@@ -865,7 +864,7 @@ Add standings tables + `GET /api/standings/groups` ✅. Build `widgets/standings
 
 ### Phase 7 — Settings & Notifications
 
-Apply `users` + `followed_teams` schema. Implement `PUT /api/user/settings`, VAPID push (Web Push only — no SMS). Add `features/settings/` screen and Settings gear to shell. Add followed-team highlights to Fixtures widget. Configure **Cron-Job.org** on `POST /api/notifications/check-reminders` every 10–15 minutes with `X-Cron-Secret` header.
+Apply `users` + `followed_teams` schema. Implement `PUT /api/user/settings`, VAPID push (Web Push only — no SMS). Add `features/settings/` screen and Settings gear to shell. Add followed-team highlights to Fixtures widget.
 
 ### Phase 7.1 — Reminder Timing Preference
 

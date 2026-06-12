@@ -1,6 +1,6 @@
 import { registerWidget } from './registry';
 
-const CURRENT_PHASE = 7;
+const CURRENT_PHASE = Number(import.meta.env.VITE_APP_PHASE ?? 7);
 
 registerWidget({
   id: 'fixtures',
