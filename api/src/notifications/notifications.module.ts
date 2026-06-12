@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CronSecretGuard } from '../common/guards/cron-secret.guard';
 import { FixtureEntity } from '../fixtures/entities/fixture.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
@@ -18,6 +19,6 @@ import { ReminderService } from './reminder.service';
     ]),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationService, ReminderService],
+  providers: [NotificationService, ReminderService, CronSecretGuard],
 })
 export class NotificationsModule {}

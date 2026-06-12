@@ -1,29 +1,14 @@
-import {
-  Controller,
-  Headers,
-  Post,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, Post, UseGuards } from '@nestjs/common';
+import { CronSecretGuard } from '../common/guards/cron-secret.guard';
 import { ReminderService } from './reminder.service';
 
 @Controller('api/notifications')
 export class NotificationsController {
-  constructor(
-    private readonly reminderService: ReminderService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly reminderService: ReminderService) {}
 
   @Post('check-reminders')
-  async checkReminders(
-    @Headers('x-cron-secret') cronSecret: string | undefined,
-  ): Promise<{ success: true; notificationsSent: number }> {
-    const expectedSecret = this.configService.get<string>('CRON_SECRET');
-
-    if (!expectedSecret || cronSecret !== expectedSecret) {
-      throw new UnauthorizedException('Invalid cron secret.');
-    }
-
+  @UseGuards(CronSecretGuard)
+  async checkReminders(): Promise<{ success: true; notificationsSent: number }> {
     const { notificationsSent } =
       await this.reminderService.checkAndDispatchReminders();
 

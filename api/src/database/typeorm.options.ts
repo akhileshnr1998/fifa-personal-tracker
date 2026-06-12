@@ -18,6 +18,12 @@ export function getDatabaseUrl(): string {
 }
 
 function getSsl(url: string): boolean | { rejectUnauthorized: boolean } {
+  const sslEnv = process.env.DATABASE_SSL;
+  if (sslEnv !== undefined) {
+    return sslEnv === 'true' ? { rejectUnauthorized: false } : false;
+  }
+  // Legacy fallback: existing Neon.tech deployments without DATABASE_SSL set.
+  // Set DATABASE_SSL=true in your environment to make this explicit.
   return url.includes('neon.tech') ? { rejectUnauthorized: false } : false;
 }
 
