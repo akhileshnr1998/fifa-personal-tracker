@@ -27,6 +27,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@types/express": "^5.0.0",
     "@types/web-push": "^3.6.4",
     "axios": "^1.8.0",
     "class-transformer": "^0.5.1",
@@ -42,7 +43,6 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0",
-    "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.0",
     "jest": "^29.7.0",
