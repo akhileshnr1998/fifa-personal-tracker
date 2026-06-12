@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   eventIcon,
   eventLabel,
@@ -39,10 +39,16 @@ export function MatchSummaryDrawer({
   status,
   onClose,
 }: MatchSummaryDrawerProps) {
+  const [closing, setClosing] = useState(false);
+
+  const beginClose = useCallback(() => {
+    setClosing(true);
+  }, []);
+
   // Close on Escape + lock body scroll while open
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') beginClose();
     }
     window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -51,7 +57,7 @@ export function MatchSummaryDrawer({
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [beginClose]);
 
   const score =
     fixture.home_score !== null && fixture.away_score !== null
@@ -74,8 +80,8 @@ export function MatchSummaryDrawer({
     <>
       {/* Backdrop */}
       <div
-        className={styles.drawerBackdrop}
-        onClick={onClose}
+        className={`${styles.drawerBackdrop} ${closing ? styles.drawerBackdropClosing : ''}`}
+        onClick={beginClose}
         aria-hidden="true"
       />
 
@@ -84,7 +90,8 @@ export function MatchSummaryDrawer({
         role="dialog"
         aria-modal="true"
         aria-label={`Match summary: ${fixture.home_team.name} vs ${fixture.away_team.name}`}
-        className={styles.drawerPanel}
+        className={`${styles.drawerPanel} ${closing ? styles.drawerPanelClosing : ''}`}
+        onAnimationEnd={closing ? onClose : undefined}
       >
         {/* Drag handle */}
         <div className={styles.drawerHandle} aria-hidden="true">
