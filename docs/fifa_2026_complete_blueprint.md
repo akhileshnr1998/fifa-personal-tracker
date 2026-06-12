@@ -8,7 +8,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-12 — Production hardening sprint (F1–F8): DB integrity FKs, sync race-condition guard, ValidationPipe, N+1 batch queries, atomic push dispatch, rate limiting, notifications route rename
+> **Last updated:** 2026-06-12 — Security & quality sprint (S1–S8): helmet + CSP, global exception filter, expired push subscription cleanup, CronSecretGuard, Joi env validation, DATABASE_SSL env var, health endpoint, SettingsPage decomposition
 
 ### Phase overview
 
@@ -49,6 +49,17 @@ This document serves as the complete technical architecture and execution roadma
 - [x] **F6** — Dispatch record inserted (`ON CONFLICT DO NOTHING RETURNING`) before push fires; push failure rolls back the record so the next cron cycle can retry
 - [x] **F7** — Cron endpoint relocated from `POST /api/fixtures/check-reminders` → `POST /api/notifications/check-reminders`
 - [x] **F8** — `@nestjs/throttler` installed; global 30 req/min guard; `GET /api/fixtures` overridden to 20 req/min to protect the ESPN sync path
+
+### Security & Quality Sprint (2026-06-12)
+
+- [x] **S1** — `helmet()` middleware added to `main.ts`; CSP sets `default-src 'none'` and `frame-ancestors 'none'` (XSS/clickjacking protection)
+- [x] **S2** — `AllExceptionsFilter` registered globally; TypeORM and unexpected errors log internally, return `{ statusCode, message }` only — no stack traces reach the wire
+- [x] **S3** — `sendPush()` catches `WebPushError` 410/404 and throws `ExpiredSubscriptionError`; `ReminderService` catches it and clears `push_subscription` + `push_notifications_enabled` for that user (dead endpoints no longer accumulate)
+- [x] **S4** — `CronSecretGuard` extracted to `api/src/common/guards/`; `NotificationsController` applies it via `@UseGuards(CronSecretGuard)` — cron auth is now a reusable guard, not inline controller logic
+- [x] **S5** — Joi `validationSchema` added to `ConfigModule.forRoot()`; `DATABASE_URL` is required at startup; all other env vars are typed with defaults — the app refuses to boot with a clear error if required vars are absent
+- [x] **S6** — `DATABASE_SSL` env var introduced; `getSsl()` reads it before falling back to the legacy `neon.tech` hostname heuristic — set `DATABASE_SSL=true` in Render to make SSL explicit
+- [x] **S7** — `GET /api/health` endpoint added (`api/src/health/`); returns `{ status: "ok", timestamp }` — configure this as Render's health check URL
+- [x] **S8** — `SettingsPage.tsx` decomposed from 236 lines into `hooks/useTeamOptions.ts`, `hooks/useSettingsForm.ts`, `TeamSelectorSection.tsx`, `PushNotificationsSection.tsx`; page shell is now ~75 lines
 
 ---
 

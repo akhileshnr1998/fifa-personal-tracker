@@ -123,7 +123,7 @@ SMS is intentionally omitted (zero-cost Web Push only, per product architect).
 
 ## Production safeguards (implemented Jun 2026)
 
-The following production-readiness improvements are live in the API:
+### Sprint 1 — Hardening
 
 | Area | What was done |
 | :--- | :--- |
@@ -134,3 +134,16 @@ The following production-readiness improvements are live in the API:
 | **Cron efficiency** | `ReminderService.checkAndDispatchReminders()` uses 3 bulk queries per reminder-bucket instead of 2 queries per fixture (eliminates N+1 pattern against Neon free tier). |
 | **Atomic push dispatch** | The `reminder_dispatches` dedup record is inserted (`ON CONFLICT DO NOTHING RETURNING`) **before** the Web Push fires. If the push fails the record is deleted so the next cycle can retry. Concurrent cron runs are blocked by the `RETURNING` row-count check. |
 | **Notifications route** | Cron endpoint moved from `POST /api/fixtures/check-reminders` to `POST /api/notifications/check-reminders`. Update your Cron-Job.org job URL if already configured. |
+
+### Sprint 2 — Security & Code Quality
+
+| Area | What was done |
+| :--- | :--- |
+| **HTTP security headers** | `helmet()` is applied in `main.ts` before all other middleware. CSP is set to `default-src 'none'; frame-ancestors 'none'` — appropriate for a JSON API. Adds `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, and others automatically. |
+| **Global exception filter** | `AllExceptionsFilter` is registered globally. Unhandled TypeORM or runtime errors log their full stack trace internally and return only `{ statusCode, message }` to the client — no internal paths or trace details ever reach the wire. |
+| **Expired push subscriptions** | `sendPush()` now catches `WebPushError` with status 410/404 and re-throws as `ExpiredSubscriptionError`. `ReminderService` catches it and clears `push_subscription` and disables push for that user, so dead endpoints do not accumulate and waste future cron cycles. |
+| **Cron auth guard** | `CronSecretGuard` (`api/src/common/guards/`) implements `CanActivate`. `NotificationsController` uses `@UseGuards(CronSecretGuard)` — the auth logic is reusable and no longer inlined in the controller method. |
+| **Env validation at startup** | `ConfigModule.forRoot()` now includes a Joi `validationSchema`. `DATABASE_URL` is required — the app refuses to boot with a descriptive error if it is absent. All other vars (`NODE_ENV`, `PORT`, `CORS_ORIGIN`, `DATABASE_SSL`) have typed defaults. |
+| **SSL configuration** | `DATABASE_SSL=true/false` env var is now the authoritative SSL switch. Set it in Render env vars. The old `neon.tech` hostname heuristic remains as a backward-compatible fallback for existing deployments. |
+| **Health endpoint** | `GET /api/health` returns `{ status: "ok", timestamp }` with no auth. Configure this as the **Render health check URL** so Render can confirm the process is fully up after a cold start before routing traffic. |
+| **SettingsPage refactor** | `SettingsPage.tsx` decomposed from 236 lines into `hooks/useTeamOptions.ts` (data fetching), `hooks/useSettingsForm.ts` (form state + submit), `TeamSelectorSection.tsx`, and `PushNotificationsSection.tsx` (pure render components). The page shell is now ~75 lines. |
