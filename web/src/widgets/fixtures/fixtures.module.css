@@ -241,7 +241,7 @@
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   background: var(--wc-gold-soft);
-  color: #8a6d12;
+  color: var(--wc-gold-dark);
   font-weight: 700;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
@@ -379,7 +379,7 @@
   height: 12px;
   border-radius: 999px;
   margin-bottom: 0.65rem;
-  background: linear-gradient(90deg, #dce8df 25%, #f0f7f2 50%, #dce8df 75%);
+  background: linear-gradient(90deg, var(--wc-border) 25%, #f0f7f2 50%, var(--wc-border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -417,13 +417,21 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .drawerBackdropClosing {
@@ -446,13 +454,21 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { transform: translateY(0); }
-  to   { transform: translateY(100%); }
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 .drawerPanelClosing {
@@ -483,19 +499,6 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 0.5rem;
-}
-
-.drawerTeamName {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--wc-navy);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.drawerTeamNameAway {
-  text-align: right;
 }
 
 .drawerScore {
@@ -637,7 +640,7 @@
 
 .statValueAway {
   text-align: left;
-  color: #8a6d12;
+  color: var(--wc-gold-dark);
 }
 
 .statBarTrack {
@@ -675,7 +678,7 @@
 .drawerSkeletonLine {
   height: 12px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #dce8df 25%, #f0f7f2 50%, #dce8df 75%);
+  background: linear-gradient(90deg, var(--wc-border) 25%, #f0f7f2 50%, var(--wc-border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -701,6 +704,12 @@
   color: var(--wc-muted);
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+/* ─── Safe-area padding (notched phones) ───────────────────────────────── */
+
+.drawerSafeArea {
+  height: env(safe-area-inset-bottom, 1.5rem);
 }
 
 /* ─── Card affordance ───────────────────────────────────────────────────── */

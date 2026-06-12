@@ -160,7 +160,7 @@ export function MatchSummaryDrawer({
 
                 return (
                   <div
-                    key={i}
+                    key={`${event.type}-${event.minute ?? 'null'}-${i}`}
                     className={`${styles.eventRow} ${isAway ? styles.eventRowAway : ''}`}
                   >
                     <span className={styles.eventMinute}>
@@ -229,7 +229,7 @@ export function MatchSummaryDrawer({
         )}
 
         {/* Bottom safe-area padding for notched phones */}
-        <div style={{ height: 'env(safe-area-inset-bottom, 1.5rem)' }} />
+        <div className={styles.drawerSafeArea} />
       </div>
     </>
   );
