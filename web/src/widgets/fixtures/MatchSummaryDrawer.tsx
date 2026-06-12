@@ -5,6 +5,7 @@ import {
   formatMinute,
   statBarWidths,
 } from './matchSummaryHelpers';
+import { TeamWithFlag } from './TeamWithFlag';
 import styles from './fixtures.module.css';
 import type { Fixture, MatchStat, MatchSummaryResult } from './types';
 import type { SummaryStatus } from './useMatchSummary';
@@ -101,15 +102,11 @@ export function MatchSummaryDrawer({
         {/* Header — teams + final score */}
         <div className={styles.drawerHeader}>
           <div className={styles.drawerTeamRow}>
-            <span className={styles.drawerTeamName}>
-              {fixture.home_team.name}
-            </span>
+            <TeamWithFlag name={fixture.home_team.name} align="left" />
             <span className={styles.drawerScore}>
               {score ?? '— —'}
             </span>
-            <span className={`${styles.drawerTeamName} ${styles.drawerTeamNameAway}`}>
-              {fixture.away_team.name}
-            </span>
+            <TeamWithFlag name={fixture.away_team.name} align="right" />
           </div>
         </div>
 

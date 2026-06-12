@@ -475,6 +475,7 @@
 .drawerHeader {
   padding: 0.75rem 1rem 1rem;
   border-bottom: 1px solid var(--wc-border);
+  background: linear-gradient(135deg, var(--wc-green-soft) 0%, var(--wc-gold-soft) 100%);
 }
 
 .drawerTeamRow {
