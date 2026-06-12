@@ -31,19 +31,6 @@ function TeamFlag({ name }: { name: string }) {
   );
 }
 
-// ── Rank change indicator ─────────────────────────────────────────────────
-
-function RankChange({ value }: { value: number }) {
-  if (value === 0) return <span style={{ color: 'var(--wc-muted)' }}>—</span>;
-  if (value > 0)
-    return (
-      <span style={{ color: 'var(--wc-green)', fontSize: '0.65rem' }}>▲{value}</span>
-    );
-  return (
-    <span style={{ color: '#c0392b', fontSize: '0.65rem' }}>▼{Math.abs(value)}</span>
-  );
-}
-
 // ── Row ───────────────────────────────────────────────────────────────────
 
 function Row({
