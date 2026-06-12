@@ -39,13 +39,18 @@ export function MatchSummaryDrawer({
   status,
   onClose,
 }: MatchSummaryDrawerProps) {
-  // Close on Escape
+  // Close on Escape + lock body scroll while open
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [onClose]);
 
   const score =
@@ -126,9 +131,7 @@ export function MatchSummaryDrawer({
           <div className={styles.drawerUnavailableWrap}>
             <div className={styles.drawerUnavailableIcon}>📋</div>
             <p className={styles.drawerUnavailableText}>
-              Match summary is not available yet.
-              <br />
-              Check back after the match ends.
+              Detailed stats aren't available for this match yet.
             </p>
           </div>
         )}
