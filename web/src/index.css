@@ -3,19 +3,21 @@
 :root {
   color-scheme: light;
 
-  /* FIFA World Cup 2026 — host-nation palette */
-  --wc-green: #0d5c2e;
-  --wc-green-bright: #1a7a43;
-  --wc-green-soft: #e6f4ec;
-  --wc-gold: #c9a227;
-  --wc-gold-dark: #8a6d12;
-  --wc-gold-soft: #fdf6dc;
-  --wc-navy: #0a1628;
-  --wc-red: #ce1126;
+  /* FIFA World Cup 2026 — Official Palette */
+  --wc-purple: #6B20C8;
+  --wc-purple-bright: #8B3AEE;
+  --wc-purple-soft: #EDE5FF;
+  --wc-magenta: #EE0058;
+  --wc-magenta-dark: #AA003E;
+  --wc-magenta-soft: #FFE0EE;
+  --wc-mint: #00D4A4;
+  --wc-mint-soft: #D0FFF4;
+  --wc-navy: #0A1628;
+  --wc-crimson: #CC1028;
   --wc-white: #ffffff;
-  --wc-surface: #fafbf9;
-  --wc-muted: #5c6b73;
-  --wc-border: #dce8df;
+  --wc-surface: #F8F5FF;
+  --wc-muted: #5A5678;
+  --wc-border: #E2D8EE;
 
   font-family:
     'Inter',
@@ -35,7 +37,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f0f7f2;
+  background: #F0EBF8;
 }
 
 button {

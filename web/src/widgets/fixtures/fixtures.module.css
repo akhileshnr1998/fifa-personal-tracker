@@ -9,12 +9,12 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, var(--wc-green-soft) 0%, var(--wc-gold-soft) 100%);
+  background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
   border-radius: 14px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--wc-green);
+  color: var(--wc-purple);
 }
 
 .heroIcon {
@@ -44,8 +44,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--wc-gold);
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
+  background: var(--wc-magenta);
+  box-shadow: 0 0 0 3px rgba(238, 0, 88, 0.2);
   flex-shrink: 0;
 }
 
@@ -53,7 +53,7 @@
   margin: 0;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--wc-green);
+  color: var(--wc-purple);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -84,22 +84,22 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--wc-green) 0%, var(--wc-green-bright) 100%);
+  background: linear-gradient(180deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
   border-radius: 16px 0 0 16px;
 }
 
 .matchCard:hover {
-  box-shadow: 0 8px 24px rgba(13, 92, 46, 0.1);
+  box-shadow: 0 8px 24px rgba(107, 32, 200, 0.1);
   transform: translateY(-1px);
 }
 
 .matchCardFollowed {
-  border-color: rgba(201, 162, 39, 0.55);
-  box-shadow: 0 6px 20px rgba(201, 162, 39, 0.16);
+  border-color: rgba(238, 0, 88, 0.45);
+  box-shadow: 0 6px 20px rgba(238, 0, 88, 0.14);
 }
 
 .matchCardFollowed::before {
-  background: linear-gradient(180deg, var(--wc-gold) 0%, #e0b93d 100%);
+  background: linear-gradient(180deg, var(--wc-magenta) 0%, #F0208A 100%);
 }
 
 .matchMeta {
@@ -123,8 +123,8 @@
   gap: 0.3rem;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  background: var(--wc-green-soft);
-  color: var(--wc-green);
+  background: var(--wc-purple-soft);
+  color: var(--wc-purple);
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -189,7 +189,7 @@
   width: 24px;
   height: 18px;
   border-radius: 3px;
-  background: var(--wc-green-soft);
+  background: var(--wc-purple-soft);
   border: 1px dashed var(--wc-border);
   color: var(--wc-muted);
   font-size: 0.65rem;
@@ -203,7 +203,7 @@
   min-width: 3.5rem;
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
-  background: var(--wc-green);
+  background: var(--wc-purple);
   color: var(--wc-white);
   font-size: 0.95rem;
   font-weight: 800;
@@ -218,8 +218,8 @@
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: var(--wc-gold-soft);
-  border: 1px solid rgba(201, 162, 39, 0.3);
+  background: var(--wc-magenta-soft);
+  border: 1px solid rgba(238, 0, 88, 0.28);
   font-size: 0.95rem;
   line-height: 1;
 }
@@ -240,8 +240,8 @@
   align-items: center;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: var(--wc-gold-soft);
-  color: var(--wc-gold-dark);
+  background: var(--wc-magenta-soft);
+  color: var(--wc-magenta-dark);
   font-weight: 700;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
@@ -267,7 +267,7 @@
   background: var(--wc-white);
   border-radius: 20px;
   border: 1px solid var(--wc-border);
-  box-shadow: 0 8px 32px rgba(13, 92, 46, 0.06);
+  box-shadow: 0 8px 32px rgba(107, 32, 200, 0.07);
 }
 
 .emptyEmojiWrap {
@@ -278,7 +278,7 @@
   height: 4rem;
   margin-bottom: 1rem;
   font-size: 2rem;
-  background: linear-gradient(135deg, var(--wc-gold-soft) 0%, var(--wc-green-soft) 100%);
+  background: linear-gradient(135deg, var(--wc-magenta-soft) 0%, var(--wc-purple-soft) 100%);
   border-radius: 50%;
   animation: gentlePulse 2.5s ease-in-out infinite;
 }
@@ -317,18 +317,18 @@
   border: none;
   border-radius: 999px;
   padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, var(--wc-green) 0%, var(--wc-green-bright) 100%);
+  background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
   color: var(--wc-white);
   font-weight: 700;
   font-size: 0.925rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(13, 92, 46, 0.3);
+  box-shadow: 0 4px 14px rgba(107, 32, 200, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .refreshButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(13, 92, 46, 0.35);
+  box-shadow: 0 6px 20px rgba(107, 32, 200, 0.38);
 }
 
 .refreshButton:active:not(:disabled) {
@@ -349,7 +349,7 @@
 .skeletonHero {
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(90deg, var(--wc-green-soft) 25%, #f5faf7 50%, var(--wc-green-soft) 75%);
+  background: linear-gradient(90deg, var(--wc-purple-soft) 25%, #f4eeff 50%, var(--wc-purple-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -370,7 +370,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: var(--wc-green-soft);
+  background: var(--wc-purple-soft);
 }
 
 .skeletonLineShort,
@@ -379,7 +379,7 @@
   height: 12px;
   border-radius: 999px;
   margin-bottom: 0.65rem;
-  background: linear-gradient(90deg, var(--wc-border) 25%, #f0f7f2 50%, var(--wc-border) 75%);
+  background: linear-gradient(90deg, var(--wc-border) 25%, #f0e8ff 50%, var(--wc-border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -449,7 +449,7 @@
   border-radius: 20px 20px 0 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  box-shadow: 0 -8px 40px rgba(10, 22, 40, 0.18);
+  box-shadow: 0 -8px 40px rgba(107, 32, 200, 0.18);
   animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
@@ -491,7 +491,7 @@
 .drawerHeader {
   padding: 0.75rem 1rem 1rem;
   border-bottom: 1px solid var(--wc-border);
-  background: linear-gradient(135deg, var(--wc-green-soft) 0%, var(--wc-gold-soft) 100%);
+  background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
 }
 
 .drawerTeamRow {
@@ -508,7 +508,7 @@
   min-width: 3.25rem;
   padding: 0.3rem 0.55rem;
   border-radius: 999px;
-  background: var(--wc-green);
+  background: var(--wc-purple);
   color: var(--wc-white);
   font-size: 1rem;
   font-weight: 800;
@@ -530,7 +530,7 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--wc-green);
+  color: var(--wc-purple);
 }
 
 /* ─── Event timeline ────────────────────────────────────────────────────── */
@@ -635,12 +635,12 @@
 
 .statValueHome {
   text-align: right;
-  color: var(--wc-green);
+  color: var(--wc-purple);
 }
 
 .statValueAway {
   text-align: left;
-  color: var(--wc-gold-dark);
+  color: var(--wc-magenta-dark);
 }
 
 .statBarTrack {
@@ -654,14 +654,14 @@
 
 .statBarHome {
   height: 100%;
-  background: var(--wc-green);
+  background: var(--wc-purple);
   border-radius: 999px 0 0 999px;
   transition: width 0.35s ease;
 }
 
 .statBarAway {
   height: 100%;
-  background: var(--wc-gold);
+  background: var(--wc-magenta);
   border-radius: 0 999px 999px 0;
   transition: width 0.35s ease;
 }
@@ -678,7 +678,7 @@
 .drawerSkeletonLine {
   height: 12px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--wc-border) 25%, #f0f7f2 50%, var(--wc-border) 75%);
+  background: linear-gradient(90deg, var(--wc-border) 25%, #f0e8ff 50%, var(--wc-border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -719,7 +719,7 @@
 }
 
 .matchCardClickable:focus-visible {
-  outline: 2px solid var(--wc-green);
+  outline: 2px solid var(--wc-purple);
   outline-offset: 2px;
 }
 
@@ -736,8 +736,8 @@
   margin: 0 1rem 0.75rem;
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
-  background: rgba(13, 92, 46, 0.12); /* fallback: #0d5c2e at 12% opacity */
-  background: color-mix(in srgb, var(--wc-green) 12%, transparent);
+  background: rgba(107, 32, 200, 0.12);
+  background: color-mix(in srgb, var(--wc-purple) 12%, transparent);
   color: var(--wc-muted);
   font-size: 0.8rem;
   text-align: center;

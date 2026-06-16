@@ -36,14 +36,14 @@
 }
 
 .groupTab:hover {
-  background: var(--wc-green-soft);
-  color: var(--wc-green);
+  background: var(--wc-purple-soft);
+  color: var(--wc-purple);
 }
 
 .groupTabActive {
-  background: var(--wc-green);
+  background: var(--wc-purple);
   color: var(--wc-white);
-  border-color: var(--wc-green);
+  border-color: var(--wc-purple);
 }
 
 /* ── Group table card ──────────────────────────────────────────── */
@@ -101,7 +101,7 @@
   letter-spacing: 0.05em;
   color: var(--wc-muted);
   white-space: nowrap;
-  background: var(--wc-green-soft);
+  background: var(--wc-purple-soft);
 }
 
 .tableHead th:first-child {
@@ -129,7 +129,7 @@
 }
 
 .tableBody tr:hover {
-  background: rgba(13, 92, 46, 0.03);
+  background: rgba(107, 32, 200, 0.03);
 }
 
 .tableBody td {
@@ -167,7 +167,7 @@
 }
 
 .teamCellFollowed {
-  color: var(--wc-green);
+  color: var(--wc-purple);
 }
 
 .teamCellInner {
@@ -193,7 +193,7 @@
   width: 20px;
   height: 15px;
   border-radius: 2px;
-  background: var(--wc-green-soft);
+  background: var(--wc-purple-soft);
   border: 1px dashed var(--wc-border);
   color: var(--wc-muted);
   font-size: 0.6rem;
@@ -202,7 +202,7 @@
 
 .followedStar {
   font-size: 0.65rem;
-  color: var(--wc-gold);
+  color: var(--wc-magenta);
 }
 
 /* stat columns */
@@ -252,7 +252,7 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 10px;
-  background: linear-gradient(90deg, var(--wc-green-soft) 25%, #f5faf7 50%, var(--wc-green-soft) 75%);
+  background: linear-gradient(90deg, var(--wc-purple-soft) 25%, #f4eeff 50%, var(--wc-purple-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -266,7 +266,7 @@
 
 .skeletonCardHeader {
   height: 44px;
-  background: linear-gradient(90deg, var(--wc-green-soft) 25%, #f5faf7 50%, var(--wc-green-soft) 75%);
+  background: linear-gradient(90deg, var(--wc-purple-soft) 25%, #f4eeff 50%, var(--wc-purple-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -282,7 +282,7 @@
 .skeletonRowLine {
   height: 12px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #dce8df 25%, #f0f7f2 50%, #dce8df 75%);
+  background: linear-gradient(90deg, #e2d8ee 25%, #f0e8ff 50%, #e2d8ee 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -317,7 +317,7 @@
   border: none;
   border-radius: 999px;
   padding: 0.75rem 1.5rem;
-  background: var(--wc-green);
+  background: var(--wc-purple);
   color: var(--wc-white);
   font-weight: 700;
   font-size: 0.9rem;
@@ -341,8 +341,8 @@
   margin: 0 1rem 0.75rem;
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
-  background: rgba(13, 92, 46, 0.12); /* fallback: #0d5c2e at 12% opacity */
-  background: color-mix(in srgb, var(--wc-green) 12%, transparent);
+  background: rgba(107, 32, 200, 0.12);
+  background: color-mix(in srgb, var(--wc-purple) 12%, transparent);
   color: var(--wc-muted);
   font-size: 0.8rem;
   text-align: center;
