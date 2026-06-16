@@ -11,7 +11,7 @@ export function groupFixturesByDay(fixtures: Fixture[]): FixtureDayGroup[] {
 
   for (const fixture of fixtures) {
     const date = new Date(fixture.match_date_time);
-    const dateKey = date.toISOString().slice(0, 10);
+    const dateKey = localDateKey(date);
     const existing = groups.get(dateKey) ?? [];
     existing.push(fixture);
     groups.set(dateKey, existing);
@@ -24,6 +24,11 @@ export function groupFixturesByDay(fixtures: Fixture[]): FixtureDayGroup[] {
       heading: formatDayHeading(new Date(`${dateKey}T12:00:00`)),
       fixtures: dayFixtures,
     }));
+}
+
+/** Returns a YYYY-MM-DD string in the viewer's local timezone. */
+function localDateKey(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA').format(date);
 }
 
 export function formatDayHeading(date: Date): string {

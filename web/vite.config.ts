@@ -4,6 +4,11 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    // Run all tests in IST so timezone-sensitive tests (e.g. groupByDay) catch
+    // regressions that only surface in non-UTC environments.
+    env: { TZ: 'Asia/Kolkata' },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
