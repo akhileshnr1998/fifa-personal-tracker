@@ -17,10 +17,9 @@
 .backgroundImage {
   position: absolute;
   inset: -5% 0 0;
-  background: url('/images/world-cup-trophy.svg') center 18% no-repeat;
-  background-size: min(92vw, 540px);
-  opacity: 0.055;
-  filter: saturate(0.85);
+  background: url('/images/trionda-fifa.svg') center 14% no-repeat;
+  background-size: clamp(480px, 140vw, 900px);
+  opacity: 0.2;
 }
 
 .backgroundGradient {

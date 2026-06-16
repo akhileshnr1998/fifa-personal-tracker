@@ -9,8 +9,8 @@ export function AppShell() {
     <FixturesRefreshProvider>
       <div className={styles.shell}>
         <div className={styles.background} aria-hidden="true">
-          <div className={styles.backgroundImage} />
           <div className={styles.backgroundGradient} />
+          <div className={styles.backgroundImage} />
         </div>
         <Header />
         <main className={styles.main}>
