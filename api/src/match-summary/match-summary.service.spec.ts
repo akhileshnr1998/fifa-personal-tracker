@@ -102,6 +102,8 @@ describe('MatchSummaryService', () => {
       transaction: jest.fn().mockImplementation((cb) => {
         const manager = {
           save: jest.fn().mockResolvedValue(undefined),
+          delete: jest.fn().mockResolvedValue(undefined),
+          upsert: jest.fn().mockResolvedValue(undefined),
           update: jest.fn().mockResolvedValue(undefined),
         };
         transactionCallback(manager);
@@ -161,18 +163,48 @@ describe('MatchSummaryService', () => {
   // Guard 2 — idempotency
   // -------------------------------------------------------------------------
 
-  it('loads from DB without calling ESPN when summary_fetched is true', async () => {
+  it('loads from DB without calling ESPN when summary_fetched is true and events exist', async () => {
     fixturesRepository.findOne.mockResolvedValue(
       makeFixture({ summary_fetched: true }),
     );
-    eventsRepository.find.mockResolvedValue([]);
+    eventsRepository.find.mockResolvedValue([
+      Object.assign(new MatchEventEntity(), {
+        fixture_id: 760415,
+        event_order: 0,
+        type: 'goal',
+        team_id: 203,
+        player_name: 'Hirving Lozano',
+        minute: 23,
+        is_extra_time: false,
+      }),
+    ]);
     statsRepository.find.mockResolvedValue([]);
 
     const result = await service.getSummary(760415);
 
     expect(httpService.get).not.toHaveBeenCalled();
     expect(dataSource.transaction).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ fixture_id: 760415, available: true, events: [], stats: [] });
+    expect(result).toMatchObject({ fixture_id: 760415, available: true, events: expect.any(Array) });
+  });
+
+  it('re-fetches from ESPN when summary_fetched is true but events were never stored', async () => {
+    fixturesRepository.findOne.mockResolvedValue(
+      makeFixture({ summary_fetched: true }),
+    );
+    eventsRepository.find.mockResolvedValue([]);
+    statsRepository.find.mockResolvedValue([
+      Object.assign(new MatchStatEntity(), {
+        fixture_id: 760415,
+        team_id: 203,
+        possession_pct: 60.5,
+        shots: 16,
+      }),
+    ]);
+    httpService.get.mockReturnValue(of({ data: ESPN_SUMMARY_RESPONSE }));
+
+    await service.getSummary(760415);
+
+    expect(httpService.get).toHaveBeenCalledTimes(1);
   });
 
   it('returns cached events and stats in event_order from DB', async () => {
@@ -262,6 +294,80 @@ describe('MatchSummaryService', () => {
     expect((result as any).events).toHaveLength(2); // 'Substitution' skipped
   });
 
+  it('returns available:false without persisting when ESPN returns no mappable data', async () => {
+    fixturesRepository.findOne.mockResolvedValue(makeFixture());
+    httpService.get.mockReturnValue(
+      of({
+        data: {
+          keyEvents: [{ type: { text: 'Kickoff' } }],
+          boxscore: { teams: [] },
+        },
+      }),
+    );
+
+    const result = await service.getSummary(760415);
+
+    expect(result).toEqual({ fixture_id: 760415, available: false });
+    expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
+  it('maps keyEvents when scoringPlays is empty (FIFA World Cup shape)', async () => {
+    fixturesRepository.findOne.mockResolvedValue(makeFixture());
+    httpService.get.mockReturnValue(
+      of({
+        data: {
+          scoringPlays: [],
+          keyEvents: [
+            {
+              type: { text: 'Goal' },
+              team: { id: '203' },
+              clock: { displayValue: "9'" },
+              text: 'Goal! Mexico 1, South Africa 0. Julián Quiñones (Mexico) right footed shot from the centre of the box to the centre of the goal. Assisted by Érik Lira.',
+            },
+            {
+              type: { text: 'Yellow Card' },
+              team: { id: '467' },
+              clock: { displayValue: "17'" },
+              text: 'Teboho Mokoena (South Africa) is shown the yellow card for a bad foul.',
+            },
+            { type: { text: 'Substitution' }, team: { id: '203' } },
+          ],
+          boxscore: {
+            teams: [
+              {
+                team: { id: '203' },
+                statistics: [{ name: 'wonCorners', displayValue: '3' }],
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    const result = await service.getSummary(760415);
+
+    expect(result).toMatchObject({
+      available: true,
+      events: [
+        expect.objectContaining({
+          type: 'goal',
+          minute: 9,
+          player_name: 'Julián Quiñones',
+          assist_name: 'Érik Lira',
+        }),
+        expect.objectContaining({
+          type: 'yellow_card',
+          minute: 17,
+          player_name: 'Teboho Mokoena',
+        }),
+      ],
+      stats: [
+        expect.objectContaining({ team_id: 203, corners: 3 }),
+      ],
+    });
+    expect((result as any).events).toHaveLength(2);
+  });
+
   it('skips stat names not present in STAT_COLUMN_MAP', async () => {
     fixturesRepository.findOne.mockResolvedValue(makeFixture());
     httpService.get.mockReturnValue(of({ data: ESPN_SUMMARY_RESPONSE }));
@@ -284,6 +390,8 @@ describe('MatchSummaryService', () => {
           if (EntityClass === MatchEventEntity) savedEvents = rows;
           return Promise.resolve();
         }),
+        delete: jest.fn().mockResolvedValue(undefined),
+        upsert: jest.fn().mockResolvedValue(undefined),
         update: jest.fn().mockResolvedValue(undefined),
       };
       return cb(manager);

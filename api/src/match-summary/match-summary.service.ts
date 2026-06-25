@@ -14,7 +14,12 @@ import {
 import { MatchEventEntity, MatchEventType } from './entities/match-event.entity';
 import { MatchStatEntity } from './entities/match-stat.entity';
 import {
+  mapKeyEventType,
+  parseKeyEventText,
+} from './espn-key-event.parser';
+import {
   EspnBoxscoreTeam,
+  EspnKeyEvent,
   EspnScoringPlay,
   EspnSummaryResponse,
 } from './espn-summary.types';
@@ -50,6 +55,7 @@ const STAT_COLUMN_MAP: Record<string, NumericStatKey> = {
   totalShots: 'shots',
   shotsOnTarget: 'shots_on_target',
   corners: 'corners',
+  wonCorners: 'corners',
   foulsCommitted: 'fouls',
   yellowCards: 'yellow_cards',
   redCards: 'red_cards',
@@ -99,9 +105,13 @@ export class MatchSummaryService {
       return { fixture_id: fixtureId, available: false };
     }
 
-    // Guard 2 — idempotency: serve from DB if already fetched
+    // Guard 2 — idempotency: serve from DB when events are already cached
     if (fixture.summary_fetched) {
-      return this.loadFromDb(fixtureId);
+      const cached = await this.loadFromDb(fixtureId);
+      if (cached.events.length > 0) {
+        return cached;
+      }
+      // Stats-only or empty stale cache — backfill from ESPN
     }
 
     // Guard 3 — concurrency: collapse concurrent requests into one ESPN call
@@ -132,22 +142,27 @@ export class MatchSummaryService {
       return { fixture_id: fixture.id, available: false };
     }
 
-    const eventEntities = this.mapScoringPlays(
-      fixture.id,
-      espnData.scoringPlays ?? [],
-    );
+    const eventEntities = this.mapEvents(fixture.id, espnData);
     const statEntities = this.mapBoxscoreStats(
       fixture.id,
       espnData.boxscore?.teams ?? [],
     );
 
+    if (eventEntities.length === 0 && statEntities.length === 0) {
+      return { fixture_id: fixture.id, available: false };
+    }
+
     // Single transaction: insert rows then flip the flag atomically
     await this.dataSource.transaction(async (manager) => {
       if (eventEntities.length > 0) {
+        await manager.delete(MatchEventEntity, { fixture_id: fixture.id });
         await manager.save(MatchEventEntity, eventEntities);
       }
       if (statEntities.length > 0) {
-        await manager.save(MatchStatEntity, statEntities);
+        await manager.upsert(MatchStatEntity, statEntities, [
+          'fixture_id',
+          'team_id',
+        ]);
       }
       await manager.update(FixtureEntity, fixture.id, {
         summary_fetched: true,
@@ -176,6 +191,56 @@ export class MatchSummaryService {
       events: events.map(toEventDto),
       stats: stats.map(toStatDto),
     };
+  }
+
+  private mapEvents(
+    fixtureId: number,
+    espnData: EspnSummaryResponse,
+  ): MatchEventEntity[] {
+    const scoringPlays = espnData.scoringPlays ?? [];
+    if (scoringPlays.length > 0) {
+      return this.mapScoringPlays(fixtureId, scoringPlays);
+    }
+    return this.mapKeyEvents(fixtureId, espnData.keyEvents ?? []);
+  }
+
+  private mapKeyEvents(
+    fixtureId: number,
+    events: EspnKeyEvent[],
+  ): MatchEventEntity[] {
+    const entities: MatchEventEntity[] = [];
+    let order = 0;
+
+    for (const event of events) {
+      const rawType = event.type?.text ?? '';
+      const mappedType = mapKeyEventType(rawType);
+      if (!mappedType) continue;
+
+      const fromAthletes = event.athletesInvolved?.[0]?.displayName ?? null;
+      const parsed =
+        fromAthletes != null
+          ? {
+              player_name: fromAthletes,
+              assist_name:
+                mappedType === 'goal'
+                  ? (event.athletesInvolved?.[1]?.displayName ?? null)
+                  : null,
+            }
+          : parseKeyEventText(rawType, event.text ?? '', mappedType);
+
+      const e = new MatchEventEntity();
+      e.fixture_id = fixtureId;
+      e.event_order = order++;
+      e.type = mappedType;
+      e.team_id = event.team?.id ? parseInt(event.team.id, 10) : null;
+      e.player_name = parsed.player_name;
+      e.assist_name = parsed.assist_name;
+      e.minute = parseMinute(event.clock?.displayValue);
+      e.is_extra_time = isExtraTime(event.clock?.displayValue);
+      entities.push(e);
+    }
+
+    return entities;
   }
 
   private mapScoringPlays(
