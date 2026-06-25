@@ -41,23 +41,25 @@ export function WidgetRouter() {
   return (
     <div className={styles.viewport}>
       {widgets.length > 1 && (
-        <nav className={styles.tabBar} aria-label="Widget navigation">
-          {widgets.map((widget) => {
-            const path = widget.id === defaultWidget.id ? '/' : `/${widget.id}`;
-            return (
-              <NavLink
-                key={widget.id}
-                to={path}
-                end={widget.id === defaultWidget.id}
-                className={({ isActive }) =>
-                  `${styles.tab} ${isActive ? styles.tabActive : ''}`
-                }
-              >
-                {widget.label}
-              </NavLink>
-            );
-          })}
-        </nav>
+        <div className={styles.tabBarSticky}>
+          <nav className={styles.tabBar} aria-label="Widget navigation">
+            {widgets.map((widget) => {
+              const path = widget.id === defaultWidget.id ? '/' : `/${widget.id}`;
+              return (
+                <NavLink
+                  key={widget.id}
+                  to={path}
+                  end={widget.id === defaultWidget.id}
+                  className={({ isActive }) =>
+                    `${styles.tab} ${isActive ? styles.tabActive : ''}`
+                  }
+                >
+                  {widget.label}
+                </NavLink>
+              );
+            })}
+          </nav>
+        </div>
       )}
       <Routes>
         {widgets.map((widget) => (

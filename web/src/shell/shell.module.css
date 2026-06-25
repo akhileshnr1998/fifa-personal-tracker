@@ -1,4 +1,6 @@
 .shell {
+  --app-header-height: calc(4px + 0.875rem * 2 + 2.5rem);
+
   position: relative;
   min-height: 100vh;
   display: flex;
@@ -12,14 +14,6 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-}
-
-.backgroundImage {
-  position: absolute;
-  inset: -5% 0 0;
-  background: url('/images/trionda-fifa.svg') center 14% no-repeat;
-  background-size: clamp(480px, 140vw, 900px);
-  opacity: 0.2;
 }
 
 .backgroundGradient {
@@ -38,6 +32,19 @@
       #fff0f8 78%,
       #f4eeff 100%
     );
+}
+
+.backgroundGradient::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(280px, 85vmin, 900px);
+  aspect-ratio: 1;
+  background: url('/images/trionda-fifa.svg') center center / contain no-repeat;
+  opacity: 0.2;
+  pointer-events: none;
 }
 
 .header {
@@ -223,14 +230,43 @@
 }
 
 /* ── Widget tab bar ──────────────────────────────────────────────── */
+.tabBarSticky {
+  position: sticky;
+  top: var(--app-header-height);
+  z-index: 9;
+  padding-bottom: 1.25rem;
+  margin-bottom: 0;
+}
+
+.tabBarSticky::after {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  right: -0.75rem;
+  top: -1rem;
+  bottom: 0;
+  border-radius: 22px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(248, 245, 255, 0.88) 42%,
+    rgba(248, 245, 255, 0.52) 78%,
+    transparent 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: -1;
+  pointer-events: none;
+}
+
 .tabBar {
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  margin-bottom: 1.25rem;
-  background: var(--wc-white);
+  background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
   border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
 }
 
 .tab {
@@ -240,23 +276,28 @@
   justify-content: center;
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
+  border: 1px solid transparent;
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--wc-muted);
   text-decoration: none;
   letter-spacing: -0.01em;
-  transition: background 0.12s, color 0.12s;
+  background: rgba(255, 255, 255, 0.55);
+  transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.12s;
   white-space: nowrap;
 }
 
 .tab:hover {
-  background: var(--wc-purple-soft);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--wc-purple);
+  border-color: rgba(107, 32, 200, 0.14);
 }
 
 .tabActive {
   background: var(--wc-purple);
   color: var(--wc-white);
+  border-color: var(--wc-purple);
+  box-shadow: 0 2px 8px rgba(107, 32, 200, 0.22);
 }
 
 .loadingState {
