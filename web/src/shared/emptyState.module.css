@@ -1,0 +1,55 @@
+.emptyState {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  background: var(--wc-white);
+  border-radius: var(--radius-sheet);
+  border: 1px solid var(--wc-border);
+  box-shadow: 0 8px 32px rgba(107, 32, 200, 0.07);
+}
+
+.emptyTitle {
+  margin: 0 0 var(--space-2);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--wc-navy);
+  letter-spacing: -0.02em;
+}
+
+.emptyCopy {
+  margin: 0 0 var(--space-6);
+  color: var(--wc-muted);
+  font-size: 0.925rem;
+  line-height: 1.55;
+  max-width: 28ch;
+  margin-inline: auto;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: 999px;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
+  color: var(--wc-white);
+  font-weight: 700;
+  font-size: 0.925rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(107, 32, 200, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.refreshButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(107, 32, 200, 0.38);
+}
+
+.refreshButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.refreshButton:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}

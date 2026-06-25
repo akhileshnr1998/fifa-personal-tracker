@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFixturesRefresh } from '../../shell/FixturesRefreshContext';
+import shared from '../../shared/emptyState.module.css';
 import { GroupTable } from './GroupTable';
 import { StandingsSkeleton } from './StandingsSkeleton';
 import styles from './standings.module.css';
@@ -38,20 +39,22 @@ export default function StandingsWidget() {
 
   if (status === 'empty' || status === 'error') {
     return (
-      <div className={styles.emptyState}>
-        <p className={styles.emptyTitle}>Standings not available yet</p>
-        <p className={styles.emptyCopy}>
-          Group stage data will appear once the tournament begins.
-        </p>
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={() => void requestRefresh()}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? 'Refreshing…' : '🔄 Refresh'}
-        </button>
-      </div>
+      <section className={styles.widget}>
+        <div className={shared.emptyState}>
+          <p className={shared.emptyTitle}>Standings not available yet</p>
+          <p className={shared.emptyCopy}>
+            Group stage data will appear once the tournament begins.
+          </p>
+          <button
+            type="button"
+            className={shared.refreshButton}
+            onClick={() => void requestRefresh()}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? 'Refreshing…' : '🔄 Refresh'}
+          </button>
+        </div>
+      </section>
     );
   }
 

@@ -38,7 +38,7 @@ export function SettingsPage() {
 
       <IosInstallHint />
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form id="settings-form" className={styles.form} onSubmit={handleSubmit}>
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Profile</h3>
           <label className={styles.fieldLabel} htmlFor="userName">
@@ -70,16 +70,25 @@ export function SettingsPage() {
           onReminderChange={setReminderMinutes}
         />
 
-        {teamLoadError ? <p className={styles.errorText}>{teamLoadError}</p> : null}
-        {error ? <p className={styles.errorText}>{error}</p> : null}
-        {toast ? <p className={styles.toastText}>{toast}</p> : null}
-
-        <div className={styles.footer}>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
-            {saving ? 'Saving…' : 'Save preferences'}
-          </button>
-        </div>
+        {(teamLoadError || error || toast) && (
+          <div className={styles.formMessages}>
+            {teamLoadError ? <p className={styles.errorText}>{teamLoadError}</p> : null}
+            {error ? <p className={styles.errorText}>{error}</p> : null}
+            {toast ? <p className={styles.toastText}>{toast}</p> : null}
+          </div>
+        )}
       </form>
+
+      <div className={styles.footer}>
+        <button
+          type="submit"
+          form="settings-form"
+          className={styles.saveButton}
+          disabled={saving}
+        >
+          {saving ? 'Saving…' : 'Save preferences'}
+        </button>
+      </div>
     </div>
   );
 }

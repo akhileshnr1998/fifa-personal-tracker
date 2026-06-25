@@ -1,13 +1,13 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--section-gap);
 }
 
 .pageHeader {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--space-2);
 }
 
 .backLink {
@@ -31,14 +31,14 @@
 }
 
 .iosHint {
-  padding: 0.875rem 1rem;
-  border-radius: 14px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-banner);
   border: 1px solid rgba(238, 0, 88, 0.3);
   background: var(--wc-magenta-soft);
 }
 
 .iosHintTitle {
-  margin: 0 0 0.35rem;
+  margin: 0 0 var(--space-2);
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--wc-magenta-dark);
@@ -54,18 +54,24 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding-bottom: 5rem;
+  gap: var(--section-gap);
+  padding-bottom: calc(var(--settings-footer-height) + var(--space-4));
+}
+
+.formMessages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
-  padding: 1rem;
+  gap: var(--space-3);
+  padding: var(--space-4);
   background: var(--wc-white);
   border: 1px solid var(--wc-border);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
 }
 
@@ -85,8 +91,8 @@
 .textInput {
   width: 100%;
   border: 1px solid var(--wc-border);
-  border-radius: 12px;
-  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-3);
   font: inherit;
   color: var(--wc-navy);
   background: #fff;
@@ -108,7 +114,7 @@
 .selectedTeams {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -117,8 +123,8 @@
 .selectedTeamChip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
   border-radius: 999px;
   background: var(--wc-purple-soft);
   color: var(--wc-purple);
@@ -150,7 +156,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   font-weight: 600;
   color: var(--wc-navy);
 }
@@ -164,15 +170,14 @@
 .timingBlock {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.25rem;
+  gap: var(--space-2);
 }
 
 .selectInput {
   width: 100%;
   border: 1px solid var(--wc-border);
-  border-radius: 12px;
-  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-3);
   font: inherit;
   color: var(--wc-navy);
   background: #fff;
@@ -185,8 +190,8 @@
 
 .errorText {
   margin: 0;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
   background: #fdecec;
   color: #9b1c1c;
   font-size: 0.875rem;
@@ -194,8 +199,8 @@
 
 .toastText {
   margin: 0;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
   background: var(--wc-purple-soft);
   color: var(--wc-purple);
   font-size: 0.875rem;
@@ -203,11 +208,17 @@
 }
 
 .footer {
+  --settings-footer-height: calc(
+    var(--space-3) + 0.9rem * 2 + 1.25rem + var(--space-3) +
+      env(safe-area-inset-bottom, 0px)
+  );
+
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 0.875rem 1rem calc(0.875rem + env(safe-area-inset-bottom));
+  padding: var(--space-3) var(--content-padding-x)
+    calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--wc-border);
@@ -220,7 +231,7 @@
   display: block;
   border: none;
   border-radius: 999px;
-  padding: 0.9rem 1.25rem;
+  padding: 0.9rem var(--space-5);
   background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
   color: var(--wc-white);
   font-weight: 700;

@@ -23,8 +23,8 @@ function TeamFlag({ name }: { name: string }) {
       src={getFlagUrl(isoCode)}
       srcSet={getFlagSrcSet(isoCode)}
       alt=""
-      width={20}
-      height={15}
+      width={24}
+      height={18}
       loading="lazy"
       decoding="async"
     />
@@ -91,7 +91,7 @@ function Legend({ entries }: { entries: GroupEntry[] }) {
   if (seen.size === 0) return null;
 
   return (
-    <div className={styles.legend} style={{ padding: '0.5rem 0.75rem 0.625rem' }}>
+    <div className={styles.legend}>
       {[...seen.entries()].map(([color, label]) => (
         <span key={color} className={styles.legendItem}>
           <span className={styles.legendDot} style={{ background: color }} />

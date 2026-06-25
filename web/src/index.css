@@ -19,6 +19,26 @@
   --wc-muted: #5A5678;
   --wc-border: #E2D8EE;
 
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Layout */
+  --content-padding-x: var(--space-4);
+  --section-gap: var(--space-5);
+
+  /* Border radius */
+  --radius-chip: 10px;
+  --radius-input: 12px;
+  --radius-banner: 14px;
+  --radius-card: 16px;
+  --radius-sheet: 20px;
+
   font-family:
     'Inter',
     system-ui,

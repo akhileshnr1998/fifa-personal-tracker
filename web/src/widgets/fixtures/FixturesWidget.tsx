@@ -21,10 +21,12 @@ export default function FixturesWidget() {
 
   if (status === 'empty' || status === 'error') {
     return (
-      <FixturesEmptyState
-        onRefresh={requestRefresh}
-        isRefreshing={isRefreshing}
-      />
+      <section className={styles.widget}>
+        <FixturesEmptyState
+          onRefresh={requestRefresh}
+          isRefreshing={isRefreshing}
+        />
+      </section>
     );
   }
 

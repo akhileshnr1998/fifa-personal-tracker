@@ -1,5 +1,7 @@
 .shell {
   --app-header-height: calc(4px + 0.875rem * 2 + 2.5rem);
+  --app-tab-bar-height: calc(var(--space-1) * 2 + var(--space-2) * 2 + 1.25rem);
+  --app-tab-sticky-height: calc(var(--app-tab-bar-height) + var(--section-gap));
 
   position: relative;
   min-height: 100vh;
@@ -74,7 +76,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1.25rem;
+  padding: 0.875rem var(--content-padding-x);
 }
 
 .brand {
@@ -92,7 +94,7 @@
   font-size: 1.35rem;
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, #fff 100%);
   border: 1px solid rgba(107, 32, 200, 0.3);
-  border-radius: 12px;
+  border-radius: var(--radius-input);
   box-shadow: 0 2px 8px rgba(107, 32, 200, 0.18);
 }
 
@@ -134,7 +136,7 @@
   background: var(--wc-purple-soft);
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 10px;
+  border-radius: var(--radius-chip);
   font-size: 1.1rem;
   cursor: pointer;
   text-decoration: none;
@@ -170,12 +172,12 @@
 
 .dropdownMenu {
   position: absolute;
-  top: calc(100% + 0.375rem);
+  top: calc(100% + var(--space-2));
   right: 0;
   min-width: 10rem;
   background: #fff;
   border: 1px solid var(--wc-border);
-  border-radius: 12px;
+  border-radius: var(--radius-input);
   box-shadow: 0 8px 24px rgba(107, 32, 200, 0.14);
   overflow: hidden;
   z-index: 100;
@@ -184,9 +186,9 @@
 .dropdownItem {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: var(--space-3) var(--space-4);
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--wc-navy);
@@ -222,7 +224,7 @@
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  padding: 1rem 1rem 2.5rem;
+  padding: var(--space-4) var(--content-padding-x) 2.5rem;
 }
 
 .viewport {
@@ -234,18 +236,18 @@
   position: sticky;
   top: var(--app-header-height);
   z-index: 9;
-  padding-bottom: 1.25rem;
+  padding-bottom: var(--section-gap);
   margin-bottom: 0;
 }
 
 .tabBarSticky::after {
   content: '';
   position: absolute;
-  left: -0.75rem;
-  right: -0.75rem;
-  top: -1rem;
+  left: calc(-1 * var(--content-padding-x));
+  right: calc(-1 * var(--content-padding-x));
+  top: 0;
   bottom: 0;
-  border-radius: 22px;
+  border-radius: var(--radius-sheet);
   background: linear-gradient(
     165deg,
     rgba(255, 255, 255, 0.94) 0%,
@@ -261,11 +263,11 @@
 
 .tabBar {
   display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
+  gap: var(--space-1);
+  padding: var(--space-1);
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
-  border-radius: 14px;
+  border-radius: var(--radius-banner);
   box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
 }
 
@@ -274,8 +276,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 0.75rem;
-  border-radius: 10px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-chip);
   border: 1px solid transparent;
   font-size: 0.875rem;
   font-weight: 700;
@@ -301,7 +303,7 @@
 }
 
 .loadingState {
-  padding: 2rem 1rem;
+  padding: var(--space-8) var(--space-4);
   text-align: center;
   color: var(--wc-muted);
 }

@@ -1,17 +1,17 @@
 .widget {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--section-gap);
 }
 
 .heroStrip {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
-  border-radius: 14px;
+  border-radius: var(--radius-banner);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--wc-purple);
@@ -25,13 +25,13 @@
 .dayList {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: calc(var(--section-gap) + var(--space-2));
 }
 
 .daySection {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .dayHeadingRow {
@@ -61,17 +61,22 @@
 .matchList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .matchCard {
   position: relative;
-  scroll-margin-top: 5rem;
-  scroll-margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  scroll-margin-top: calc(
+    var(--app-header-height) + var(--app-tab-sticky-height) + var(--space-3)
+  );
+  scroll-margin-bottom: var(--space-6);
   background: var(--wc-white);
   border: 1px solid var(--wc-border);
-  border-radius: 16px;
-  padding: 1rem 1rem 1rem 1.125rem;
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
   box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
   overflow: hidden;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -85,7 +90,7 @@
   bottom: 0;
   width: 4px;
   background: linear-gradient(180deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
-  border-radius: 16px 0 0 16px;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
 }
 
 .matchCard:hover {
@@ -106,7 +111,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.875rem;
 }
 
 .matchNumber {
@@ -138,15 +142,14 @@
 .teams {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  gap: 0.625rem;
+  gap: var(--space-3);
   align-items: center;
-  margin-bottom: 0.875rem;
 }
 
 .team {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -227,9 +230,9 @@
 .cardFooter {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
-  padding-top: 0.75rem;
+  padding-top: var(--space-2);
   border-top: 1px dashed var(--wc-border);
   font-size: 0.78rem;
   color: var(--wc-muted);
@@ -260,23 +263,13 @@
   opacity: 0.7;
 }
 
-.emptyState {
-  margin-top: 1.5rem;
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  background: var(--wc-white);
-  border-radius: 20px;
-  border: 1px solid var(--wc-border);
-  box-shadow: 0 8px 32px rgba(107, 32, 200, 0.07);
-}
-
 .emptyEmojiWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 4rem;
   height: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   font-size: 2rem;
   background: linear-gradient(135deg, var(--wc-magenta-soft) 0%, var(--wc-purple-soft) 100%);
   border-radius: 50%;
@@ -293,62 +286,15 @@
   }
 }
 
-.emptyTitle {
-  margin: 0 0 0.5rem;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--wc-navy);
-  letter-spacing: -0.02em;
-}
-
-.emptyCopy {
-  margin: 0 0 1.5rem;
-  color: var(--wc-muted);
-  font-size: 0.925rem;
-  line-height: 1.55;
-  max-width: 28ch;
-  margin-inline: auto;
-}
-
-.refreshButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: none;
-  border-radius: 999px;
-  padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
-  color: var(--wc-white);
-  font-weight: 700;
-  font-size: 0.925rem;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(107, 32, 200, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.refreshButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(107, 32, 200, 0.38);
-}
-
-.refreshButton:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.refreshButton:disabled {
-  opacity: 0.75;
-  cursor: wait;
-}
-
 .skeletonList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .skeletonHero {
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--radius-banner);
   background: linear-gradient(90deg, var(--wc-purple-soft) 25%, #f4eeff 50%, var(--wc-purple-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
@@ -356,8 +302,8 @@
 
 .skeletonCard {
   position: relative;
-  border-radius: 16px;
-  padding: 1rem 1rem 1rem 1.125rem;
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
   background: var(--wc-white);
   border: 1px solid var(--wc-border);
   overflow: hidden;
@@ -446,7 +392,7 @@
   z-index: 300;
   max-height: 82vh;
   background: var(--wc-white);
-  border-radius: 20px 20px 0 0;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   box-shadow: 0 -8px 40px rgba(107, 32, 200, 0.18);
@@ -478,7 +424,7 @@
 .drawerHandle {
   display: flex;
   justify-content: center;
-  padding: 0.75rem 0 0.25rem;
+  padding: var(--space-3) 0 var(--space-2);
 }
 
 .drawerHandleBar {
@@ -489,7 +435,7 @@
 }
 
 .drawerHeader {
-  padding: 0.75rem 1rem 1rem;
+  padding: var(--space-3) var(--space-4) var(--space-4);
   border-bottom: 1px solid var(--wc-border);
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
 }
@@ -498,7 +444,7 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .drawerScore {
@@ -517,15 +463,16 @@
 }
 
 .drawerSection {
-  padding: 1rem 1rem 0.5rem;
+  padding: var(--space-4);
 }
 
 .drawerSection + .drawerSection {
   border-top: 1px dashed var(--wc-border);
+  padding-top: var(--space-4);
 }
 
 .drawerSectionTitle {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-3);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -538,13 +485,13 @@
 .eventList {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .eventRow {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .eventRowAway {
@@ -600,14 +547,14 @@
 .statList {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding-bottom: 0.5rem;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
 }
 
 .statRow {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--space-1);
 }
 
 .statLabel {
@@ -622,7 +569,7 @@
 .statBarWrap {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .statValue {
@@ -671,8 +618,8 @@
 .drawerLoadingWrap {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem 1rem 1.5rem;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-6);
 }
 
 .drawerSkeletonLine {
@@ -684,20 +631,20 @@
 }
 
 .drawerErrorWrap {
-  padding: 1.5rem 1rem 2rem;
+  padding: var(--space-6) var(--space-4) var(--space-8);
   text-align: center;
   color: var(--wc-muted);
   font-size: 0.9rem;
 }
 
 .drawerUnavailableWrap {
-  padding: 1.5rem 1rem 2rem;
+  padding: var(--space-6) var(--space-4) var(--space-8);
   text-align: center;
 }
 
 .drawerUnavailableIcon {
   font-size: 2rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .drawerUnavailableText {
@@ -709,7 +656,7 @@
 /* ─── Safe-area padding (notched phones) ───────────────────────────────── */
 
 .drawerSafeArea {
-  height: env(safe-area-inset-bottom, 1.5rem);
+  height: env(safe-area-inset-bottom, var(--space-6));
 }
 
 /* ─── Card affordance ───────────────────────────────────────────────────── */
@@ -733,9 +680,9 @@
 /* ─── Stale-cache banner ────────────────────────────────────────────────── */
 
 .staleNotice {
-  margin: 0 1rem 0.75rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-chip);
   background: rgba(107, 32, 200, 0.12);
   background: color-mix(in srgb, var(--wc-purple) 12%, transparent);
   color: var(--wc-muted);
