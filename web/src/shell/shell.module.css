@@ -1,7 +1,7 @@
 .shell {
   --app-header-height: calc(4px + 0.875rem * 2 + 2.5rem);
   --app-tab-bar-height: calc(var(--space-1) * 2 + var(--space-2) * 2 + 1.25rem);
-  --app-tab-sticky-height: calc(var(--app-tab-bar-height) + var(--section-gap));
+  --app-tab-sticky-height: calc(var(--app-tab-bar-height) + var(--space-3) * 2);
 
   position: relative;
   min-height: 100vh;
@@ -236,8 +236,9 @@
   position: sticky;
   top: var(--app-header-height);
   z-index: 9;
-  padding-bottom: var(--section-gap);
-  margin-bottom: 0;
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--section-gap);
 }
 
 .tabBarSticky::after {
@@ -250,13 +251,13 @@
   border-radius: var(--radius-sheet);
   background: linear-gradient(
     165deg,
-    rgba(255, 255, 255, 0.94) 0%,
-    rgba(248, 245, 255, 0.88) 42%,
-    rgba(248, 245, 255, 0.52) 78%,
-    transparent 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(248, 245, 255, 0.86) 100%
   );
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(10, 22, 40, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: -1;
   pointer-events: none;
 }
