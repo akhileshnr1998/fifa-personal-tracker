@@ -266,14 +266,23 @@
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
   border-radius: var(--radius-banner);
   box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
 }
 
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
 .tab {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: max-content;
   display: flex;
   align-items: center;
   justify-content: center;

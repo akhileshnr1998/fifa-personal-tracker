@@ -1,5 +1,5 @@
-import { lazy, Suspense, type ComponentType } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useRef, type ComponentType } from 'react';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { getEnabledWidgets } from './registry';
 import { getCurrentPhase } from './register-widgets';
@@ -27,6 +27,13 @@ function WidgetLoadingFallback() {
 export function WidgetRouter() {
   const widgets = getEnabledWidgets(getCurrentPhase());
   const defaultWidget = widgets[0];
+  const tabBarRef = useRef<HTMLElement>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    const activeTab = tabBarRef.current?.querySelector('[aria-current="page"]');
+    activeTab?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [location.pathname]);
 
   if (!defaultWidget) {
     return (
@@ -42,7 +49,7 @@ export function WidgetRouter() {
     <div className={styles.viewport}>
       {widgets.length > 1 && (
         <div className={styles.tabBarSticky}>
-          <nav className={styles.tabBar} aria-label="Widget navigation">
+          <nav ref={tabBarRef} className={styles.tabBar} aria-label="Widget navigation">
             {widgets.map((widget) => {
               const path = widget.id === defaultWidget.id ? '/' : `/${widget.id}`;
               return (
