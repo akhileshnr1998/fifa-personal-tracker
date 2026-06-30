@@ -57,6 +57,9 @@ export class MatchEventEntity {
   @Column({ type: 'int', nullable: true })
   minute!: number | null;
 
+  @Column({ type: 'int', nullable: true })
+  shot_number!: number | null;
+
   @Column({ type: 'boolean', default: false })
   is_extra_time!: boolean;
 

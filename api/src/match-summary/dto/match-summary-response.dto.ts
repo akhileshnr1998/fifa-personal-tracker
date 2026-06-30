@@ -7,6 +7,7 @@ export interface MatchEventDto {
   player_name: string | null;
   assist_name: string | null;
   is_extra_time: boolean;
+  shot_number: number | null;
 }
 
 export interface MatchStatDto {

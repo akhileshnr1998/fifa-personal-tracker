@@ -1,5 +1,5 @@
 import { TeamWithFlag } from './TeamWithFlag';
-import { formatFixtureScore, formatFixtureScoreMeta } from './formatFixtureScore';
+import { formatFixturePensSubline, formatFixtureScoreMeta } from './formatFixtureScore';
 import { formatKickoffTime } from './groupByDay';
 import { formatStageLabel } from './stageLabels';
 import styles from './fixtures.module.css';
@@ -20,16 +20,17 @@ function isFollowedMatch(fixture: Fixture, followedTeamIds: number[]): boolean {
 }
 
 function formatScore(fixture: Fixture): string | null {
-  return formatFixtureScore(fixture);
+  if (fixture.status !== 'finished') return null;
+  if (fixture.home_score === null || fixture.away_score === null) return null;
+  return `${fixture.home_score} – ${fixture.away_score}`;
 }
 
 export function MatchCard({ fixture, followedTeams = [], id, onSelect }: MatchCardProps) {
   const isFollowed = isFollowedMatch(fixture, followedTeams);
   const scoreLine = formatScore(fixture);
+  const pensSubline = formatFixturePensSubline(fixture);
   const scoreMeta = formatFixtureScoreMeta(fixture.decided_by);
-  const showMetaBadge =
-    scoreMeta !== null &&
-    !(fixture.decided_by === 'penalties' && scoreLine?.includes('('));
+  const showMetaBadge = scoreMeta === 'AET';
   const isClickable = onSelect !== undefined;
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -72,9 +73,15 @@ export function MatchCard({ fixture, followedTeams = [], id, onSelect }: MatchCa
         <TeamWithFlag name={fixture.home_team.name} align="left" />
         {scoreLine ? (
           <span className={styles.scoreWrap}>
-            <span className={styles.scoreBadge} aria-label={`Final score ${scoreLine}`}>
+            <span
+              className={styles.scoreBadge}
+              aria-label={`Final score ${scoreLine}${pensSubline ? `, ${pensSubline}` : ''}`}
+            >
               {scoreLine}
             </span>
+            {pensSubline && (
+              <span className={styles.scorePensSubline}>{pensSubline}</span>
+            )}
             {showMetaBadge && (
               <span className={styles.scoreMetaBadge} aria-label={scoreMeta ?? undefined}>
                 {scoreMeta}

@@ -549,6 +549,10 @@ describe('MatchSummaryService', () => {
     expect(types.indexOf('shootout_goal')).toBeGreaterThan(
       types.lastIndexOf('goal'),
     );
+    const shootout = (result as any).events.filter(
+      (e: { type: string }) => e.type.startsWith('shootout'),
+    );
+    expect(shootout[0].shot_number).toBe(1);
   });
 
   it('parses "105\'" as minute 105 with is_extra_time true', async () => {

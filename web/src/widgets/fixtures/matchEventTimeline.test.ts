@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildShootoutRounds,
   eventSortKey,
   groupMatchEventsForDisplay,
+  shootoutDotSequence,
   sortEventsLatestFirst,
   splitShootoutByTeam,
 } from './matchEventTimeline';
@@ -16,6 +18,7 @@ function evt(
     player_name: 'Player',
     assist_name: null,
     is_extra_time: false,
+    shot_number: null,
     ...overrides,
   };
 }
@@ -95,6 +98,50 @@ describe('groupMatchEventsForDisplay', () => {
       'shootout_miss',
       'shootout_goal',
     ]);
+  });
+
+  it('collapses earlier periods when match went to penalties', () => {
+    const events = [
+      evt({ type: 'goal', minute: 42 }),
+      evt({ type: 'goal', minute: 105, is_extra_time: true }),
+      evt({ type: 'shootout_goal', team_id: 481 }),
+    ];
+    const sections = groupMatchEventsForDisplay(events, 'penalties');
+
+    expect(sections.find((s) => s.id === 'extra_time')?.defaultCollapsed).toBe(
+      true,
+    );
+    expect(sections.find((s) => s.id === 'regulation')?.defaultCollapsed).toBe(
+      true,
+    );
+  });
+});
+
+describe('buildShootoutRounds', () => {
+  it('pairs kicks by shot_number', () => {
+    const events = [
+      evt({ type: 'shootout_goal', team_id: 481, shot_number: 1, player_name: 'A' }),
+      evt({ type: 'shootout_miss', team_id: 490, shot_number: 1, player_name: 'B' }),
+      evt({ type: 'shootout_miss', team_id: 481, shot_number: 2, player_name: 'C' }),
+      evt({ type: 'shootout_goal', team_id: 490, shot_number: 2, player_name: 'D' }),
+    ];
+    const rounds = buildShootoutRounds(events, 481, 490);
+
+    expect(rounds).toHaveLength(2);
+    expect(rounds[0].round).toBe(2);
+    expect(rounds[0].home?.player_name).toBe('C');
+    expect(rounds[0].away?.player_name).toBe('D');
+  });
+});
+
+describe('shootoutDotSequence', () => {
+  it('returns chronological dot sequence oldest to newest', () => {
+    const events = [
+      evt({ type: 'shootout_goal' }),
+      evt({ type: 'shootout_miss' }),
+      evt({ type: 'shootout_goal' }),
+    ];
+    expect(shootoutDotSequence(events)).toEqual(['scored', 'missed', 'scored']);
   });
 });
 

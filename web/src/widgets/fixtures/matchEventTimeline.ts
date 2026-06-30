@@ -5,7 +5,16 @@ export interface MatchEventSection {
   id: 'shootout' | 'extra_time' | 'regulation';
   title: string;
   events: MatchEvent[];
+  defaultCollapsed?: boolean;
 }
+
+export interface ShootoutRound {
+  round: number;
+  home: MatchEvent | null;
+  away: MatchEvent | null;
+}
+
+export type ShootoutDot = 'scored' | 'missed';
 
 /** True for 91'+ ET period events — not stoppage time (45+2', 90+4'). */
 export function isExtraPeriodEvent(event: MatchEvent): boolean {
@@ -60,6 +69,46 @@ export function splitShootoutByTeam(
   return { home, away };
 }
 
+export function shootoutDotSequence(events: MatchEvent[]): ShootoutDot[] {
+  return [...events].reverse().map((e) =>
+    e.type === 'shootout_goal' ? 'scored' : 'missed',
+  );
+}
+
+export function buildShootoutRounds(
+  events: MatchEvent[],
+  homeTeamId: number,
+  awayTeamId: number,
+): ShootoutRound[] {
+  const hasShotNumbers = events.some((e) => e.shot_number != null);
+
+  if (hasShotNumbers) {
+    const roundMap = new Map<number, ShootoutRound>();
+    for (const event of events) {
+      const round = event.shot_number ?? 0;
+      if (!roundMap.has(round)) {
+        roundMap.set(round, { round, home: null, away: null });
+      }
+      const row = roundMap.get(round)!;
+      if (event.team_id === homeTeamId) row.home = event;
+      else if (event.team_id === awayTeamId) row.away = event;
+    }
+    return [...roundMap.values()].sort((a, b) => b.round - a.round);
+  }
+
+  const { home, away } = splitShootoutByTeam(events, homeTeamId, awayTeamId);
+  const maxLen = Math.max(home.length, away.length);
+  const rounds: ShootoutRound[] = [];
+  for (let i = 0; i < maxLen; i++) {
+    rounds.push({
+      round: maxLen - i,
+      home: home[i] ?? null,
+      away: away[i] ?? null,
+    });
+  }
+  return rounds;
+}
+
 /**
  * Groups match events into display sections, newest period first:
  * Penalty Shootout → Extra Time → Full Time.
@@ -67,7 +116,7 @@ export function splitShootoutByTeam(
  */
 export function groupMatchEventsForDisplay(
   events: MatchEvent[],
-  _decidedBy: DecidedBy,
+  decidedBy: DecidedBy,
 ): MatchEventSection[] {
   const shootout = sortShootoutLatestFirst(
     events.filter((e) => isShootoutEvent(e.type)),
@@ -90,6 +139,7 @@ export function groupMatchEventsForDisplay(
       id: 'extra_time',
       title: 'Extra Time',
       events: extraTime,
+      defaultCollapsed: decidedBy === 'penalties',
     });
   }
   if (regulation.length > 0) {
@@ -97,6 +147,8 @@ export function groupMatchEventsForDisplay(
       id: 'regulation',
       title: multiPeriod ? 'Full Time' : 'Match Events',
       events: regulation,
+      defaultCollapsed:
+        decidedBy === 'penalties' || decidedBy === 'extra_time',
     });
   }
 

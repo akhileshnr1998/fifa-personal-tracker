@@ -230,6 +230,14 @@
   color: var(--wc-muted);
 }
 
+.scorePensSubline {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--wc-purple);
+  text-transform: uppercase;
+}
+
 .vsBadge {
   display: flex;
   align-items: center;
@@ -478,13 +486,83 @@
   flex-shrink: 0;
 }
 
+.drawerScoreStack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.drawerScorePens {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--wc-purple);
+  text-transform: uppercase;
+}
+
+.drawerOutcome {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--wc-muted);
+}
+
 .drawerSection {
   padding: var(--space-4);
 }
 
-.drawerSection + .drawerSection {
+.drawerSectionMuted {
+  padding: var(--space-3) var(--space-4);
+  background: var(--wc-purple-soft);
+}
+
+.drawerSectionShootout {
+  background: linear-gradient(
+    180deg,
+    var(--wc-purple-soft) 0%,
+    transparent 100%
+  );
+}
+
+.drawerSection + .drawerSection,
+.drawerSectionMuted + .drawerSection,
+.drawerSection + .drawerSectionMuted,
+.drawerSectionMuted + .drawerSectionMuted,
+.drawerSectionShootout + .drawerSection,
+.drawerSection + .drawerSectionShootout {
   border-top: 1px dashed var(--wc-border);
-  padding-top: var(--space-4);
+}
+
+.collapsibleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--space-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapsibleHeader .drawerSectionTitle {
+  margin: 0;
+}
+
+.collapsibleChevron {
+  font-size: 0.85rem;
+  color: var(--wc-purple);
+  line-height: 1;
+}
+
+.statsExpandHint {
+  margin: var(--space-2) 0 0;
+  font-size: 0.72rem;
+  color: var(--wc-muted);
+  text-align: center;
 }
 
 .drawerSectionTitle {
@@ -558,41 +636,131 @@
   color: var(--wc-muted);
 }
 
-/* ─── Penalty shootout (two-column) ─────────────────────────────────────── */
+/* ─── Penalty shootout panel ─────────────────────────────────────────────── */
 
-.shootoutGrid {
+.shootoutPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.shootoutSummaryRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: var(--space-2);
   align-items: start;
 }
 
-.shootoutColumn,
-.shootoutColumnAway {
+.shootoutSummaryTeam,
+.shootoutSummaryTeamAway {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0.35rem;
   min-width: 0;
 }
 
-.shootoutColumnAway {
+.shootoutSummaryTeamAway {
   align-items: flex-end;
 }
 
-.shootoutCell,
-.shootoutCellAway {
+.shootoutDots {
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.shootoutDotScored,
+.shootoutDotMissed {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.shootoutDotScored {
+  background: #22a06b;
+}
+
+.shootoutDotMissed {
+  background: transparent;
+  border: 1.5px solid #c9372c;
+}
+
+.shootoutTotal {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--wc-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.shootoutRounds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.shootoutRoundRow {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr 1fr;
   gap: var(--space-1);
-  max-width: 100%;
+  align-items: center;
 }
 
-.shootoutCellAway {
+.shootoutRoundLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--wc-muted);
+  text-transform: uppercase;
+}
+
+.shootoutRoundKick,
+.shootoutRoundKickAway {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+
+.shootoutRoundKickAway {
   flex-direction: row-reverse;
+  text-align: right;
 }
 
-.shootoutCellAway .eventDetail {
+.shootoutKickIcon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.shootoutKickName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--wc-navy);
+}
+
+.shootoutRoundEmpty,
+.shootoutRoundEmptyAway {
+  font-size: 0.78rem;
+  color: var(--wc-muted);
+}
+
+.shootoutRoundEmptyAway {
   text-align: right;
+}
+
+.shootoutExpandBtn {
+  align-self: center;
+  padding: 0.35rem 0.75rem;
+  border: 1px dashed var(--wc-border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--wc-purple);
+  cursor: pointer;
 }
 
 /* ─── Stat comparison bars ──────────────────────────────────────────────── */

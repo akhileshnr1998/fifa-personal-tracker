@@ -276,6 +276,7 @@ export class MatchSummaryService {
         e.player_name = shot.player ?? null;
         e.assist_name = null;
         e.minute = null;
+        e.shot_number = shot.shotNumber ?? null;
         e.is_extra_time = false;
         entities.push(e);
       }
@@ -402,6 +403,7 @@ function toEventDto(e: MatchEventEntity): MatchEventDto {
     player_name: e.player_name,
     assist_name: e.assist_name,
     is_extra_time: e.is_extra_time,
+    shot_number: e.shot_number,
   };
 }
 

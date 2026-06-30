@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatFixtureScore, formatFixtureScoreMeta } from './formatFixtureScore';
+import {
+  formatFixturePensSubline,
+  formatFixtureScore,
+  formatFixtureScoreDisplay,
+  formatFixtureScoreMeta,
+} from './formatFixtureScore';
 
 describe('formatFixtureScore', () => {
   const base = {
@@ -42,5 +47,38 @@ describe('formatFixtureScoreMeta', () => {
   });
   it('returns null for regulation', () => {
     expect(formatFixtureScoreMeta('regulation')).toBeNull();
+  });
+});
+
+describe('formatFixtureScoreDisplay', () => {
+  const base = {
+    status: 'finished' as const,
+    home_score: 1,
+    away_score: 1,
+    home_team: { id: 1, name: 'Germany' },
+    away_team: { id: 2, name: 'Paraguay' },
+    decided_by: 'penalties' as const,
+    home_penalty_score: 3,
+    away_penalty_score: 4,
+  };
+
+  it('splits regulation and pens lines', () => {
+    expect(formatFixtureScoreDisplay(base)).toEqual({
+      regulation: '1 – 1',
+      pensLine: '3 – 4 pens',
+      outcome: 'Paraguay win on penalties',
+    });
+  });
+});
+
+describe('formatFixturePensSubline', () => {
+  it('returns compact pens subline', () => {
+    expect(
+      formatFixturePensSubline({
+        decided_by: 'penalties',
+        home_penalty_score: 3,
+        away_penalty_score: 4,
+      }),
+    ).toBe('3–4 pens');
   });
 });

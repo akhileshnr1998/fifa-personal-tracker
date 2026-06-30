@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { groupMatchEventsForDisplay, splitShootoutByTeam } from './matchEventTimeline';
+import { CollapsibleSection } from './CollapsibleSection';
+import { groupMatchEventsForDisplay } from './matchEventTimeline';
 import {
   eventIcon,
   eventLabel,
   formatMinute,
-  isShootoutEvent,
   statBarWidths,
 } from './matchSummaryHelpers';
-import { formatFixtureScore } from './formatFixtureScore';
+import { formatFixtureScoreDisplay } from './formatFixtureScore';
+import { ShootoutPanel } from './ShootoutPanel';
 import { TeamWithFlag } from './TeamWithFlag';
 import styles from './fixtures.module.css';
-import type { Fixture, MatchEvent, MatchStat, MatchSummaryResult } from './types';
+import type { DecidedBy, Fixture, MatchEvent, MatchStat, MatchSummaryResult } from './types';
 import type { SummaryStatus } from './useMatchSummary';
 
 interface MatchSummaryDrawerProps {
@@ -37,40 +38,38 @@ const STAT_ROWS: StatRowDef[] = [
   { key: 'saves', label: 'Saves' },
 ];
 
+const TEASER_STAT_KEYS: (keyof MatchStat)[] = [
+  'possession_pct',
+  'shots',
+  'shots_on_target',
+];
+
 function EventRow({
   event,
   awayTeamId,
-  showMinute,
 }: {
   event: MatchEvent;
   awayTeamId: number;
-  showMinute: boolean;
 }) {
   const isAway = event.team_id === awayTeamId;
   const metaParts: string[] = [];
-  if (isShootoutEvent(event.type)) {
+  if (event.type !== 'goal' && event.type !== 'penalty_goal') {
     metaParts.push(eventLabel(event.type));
-  } else {
-    if (event.type !== 'goal' && event.type !== 'penalty_goal') {
-      metaParts.push(eventLabel(event.type));
-    }
-    if (event.assist_name) {
-      metaParts.push(`assist: ${event.assist_name}`);
-    }
-    if (event.type === 'own_goal') {
-      metaParts.push('OG');
-    }
+  }
+  if (event.assist_name) {
+    metaParts.push(`assist: ${event.assist_name}`);
+  }
+  if (event.type === 'own_goal') {
+    metaParts.push('OG');
   }
 
   return (
     <div
       className={`${styles.eventRow} ${isAway ? styles.eventRowAway : ''}`}
     >
-      {showMinute && (
-        <span className={styles.eventMinute}>
-          {formatMinute(event.minute, event.is_extra_time)}
-        </span>
-      )}
+      <span className={styles.eventMinute}>
+        {formatMinute(event.minute, event.is_extra_time)}
+      </span>
       <span className={styles.eventIcon} aria-hidden="true">
         {eventIcon(event.type)}
       </span>
@@ -84,63 +83,54 @@ function EventRow({
   );
 }
 
-function ShootoutCell({
-  event,
-  align,
+function StatRows({
+  rows,
+  homeStat,
+  awayStat,
 }: {
-  event: MatchEvent;
-  align: 'left' | 'right';
+  rows: StatRowDef[];
+  homeStat: MatchStat | null;
+  awayStat: MatchStat | null;
 }) {
   return (
-    <div
-      className={
-        align === 'right' ? styles.shootoutCellAway : styles.shootoutCell
-      }
-    >
-      <span className={styles.eventIcon} aria-hidden="true">
-        {eventIcon(event.type)}
-      </span>
-      <div className={styles.eventDetail}>
-        <div className={styles.eventPlayer}>{event.player_name ?? '—'}</div>
-        <div className={styles.eventMeta}>{eventLabel(event.type)}</div>
-      </div>
+    <div className={styles.statList}>
+      {rows.map(({ key, label }) => {
+        const homeVal = homeStat ? (homeStat[key] as number | null) : null;
+        const awayVal = awayStat ? (awayStat[key] as number | null) : null;
+        if (homeVal === null && awayVal === null) return null;
+
+        const { homePct, awayPct } = statBarWidths(homeVal, awayVal);
+
+        return (
+          <div key={key} className={styles.statRow}>
+            <span className={styles.statLabel}>{label}</span>
+            <div className={styles.statBarWrap}>
+              <span className={`${styles.statValue} ${styles.statValueHome}`}>
+                {homeVal ?? '—'}
+              </span>
+              <div className={styles.statBarTrack}>
+                <div
+                  className={styles.statBarHome}
+                  style={{ width: `${homePct}%` }}
+                />
+                <div
+                  className={styles.statBarAway}
+                  style={{ width: `${awayPct}%` }}
+                />
+              </div>
+              <span className={`${styles.statValue} ${styles.statValueAway}`}>
+                {awayVal ?? '—'}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ShootoutGrid({
-  events,
-  homeTeamId,
-  awayTeamId,
-}: {
-  events: MatchEvent[];
-  homeTeamId: number;
-  awayTeamId: number;
-}) {
-  const { home, away } = splitShootoutByTeam(events, homeTeamId, awayTeamId);
-
-  return (
-    <div className={styles.shootoutGrid}>
-      <div className={styles.shootoutColumn}>
-        {home.map((event, i) => (
-          <ShootoutCell
-            key={`home-${event.type}-${i}`}
-            event={event}
-            align="left"
-          />
-        ))}
-      </div>
-      <div className={styles.shootoutColumnAway}>
-        {away.map((event, i) => (
-          <ShootoutCell
-            key={`away-${event.type}-${i}`}
-            event={event}
-            align="right"
-          />
-        ))}
-      </div>
-    </div>
-  );
+function statsDefaultCollapsed(decidedBy: DecidedBy): boolean {
+  return decidedBy !== 'regulation';
 }
 
 export function MatchSummaryDrawer({
@@ -155,7 +145,6 @@ export function MatchSummaryDrawer({
     setClosing(true);
   }, []);
 
-  // Close on Escape + lock body scroll while open
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') beginClose();
@@ -169,7 +158,7 @@ export function MatchSummaryDrawer({
     };
   }, [beginClose]);
 
-  const score = formatFixtureScore(fixture);
+  const scoreDisplay = formatFixtureScoreDisplay(fixture);
 
   const homeStat =
     summary?.available
@@ -189,17 +178,20 @@ export function MatchSummaryDrawer({
     [summary, fixture.decided_by],
   );
   const hasEvents = eventSections.length > 0;
+  const statsCollapsed = statsDefaultCollapsed(fixture.decided_by);
+
+  const teaserStatRows = STAT_ROWS.filter((r) =>
+    TEASER_STAT_KEYS.includes(r.key),
+  );
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`${styles.drawerBackdrop} ${closing ? styles.drawerBackdropClosing : ''}`}
         onClick={beginClose}
         aria-hidden="true"
       />
 
-      {/* Slide-up panel */}
       <div
         role="dialog"
         aria-modal="true"
@@ -207,23 +199,28 @@ export function MatchSummaryDrawer({
         className={`${styles.drawerPanel} ${closing ? styles.drawerPanelClosing : ''}`}
         onAnimationEnd={closing ? onClose : undefined}
       >
-        {/* Drag handle */}
         <div className={styles.drawerHandle} aria-hidden="true">
           <div className={styles.drawerHandleBar} />
         </div>
 
-        {/* Header — teams + final score */}
         <div className={styles.drawerHeader}>
           <div className={styles.drawerTeamRow}>
             <TeamWithFlag name={fixture.home_team.name} align="left" />
-            <span className={styles.drawerScore}>
-              {score ?? '— —'}
-            </span>
+            <div className={styles.drawerScoreStack}>
+              <span className={styles.drawerScore}>
+                {scoreDisplay.regulation ?? '— —'}
+              </span>
+              {scoreDisplay.pensLine && (
+                <span className={styles.drawerScorePens}>{scoreDisplay.pensLine}</span>
+              )}
+            </div>
             <TeamWithFlag name={fixture.away_team.name} align="right" />
           </div>
+          {scoreDisplay.outcome && (
+            <p className={styles.drawerOutcome}>{scoreDisplay.outcome}</p>
+          )}
         </div>
 
-        {/* Loading skeleton */}
         {status === 'loading' && (
           <div className={styles.drawerLoadingWrap}>
             {[80, 60, 90, 50, 75].map((w) => (
@@ -236,14 +233,12 @@ export function MatchSummaryDrawer({
           </div>
         )}
 
-        {/* Error */}
         {status === 'error' && (
           <div className={styles.drawerErrorWrap}>
             ⚠️ Could not load match summary. Please try again.
           </div>
         )}
 
-        {/* Summary not available (match not finished on ESPN side) */}
         {status === 'ready' && summary && !summary.available && (
           <div className={styles.drawerUnavailableWrap}>
             <div className={styles.drawerUnavailableIcon}>📋</div>
@@ -253,78 +248,88 @@ export function MatchSummaryDrawer({
           </div>
         )}
 
-        {/* Events timeline — newest period first, latest event first within each */}
         {status === 'ready' && hasEvents && summary?.available && (
           <>
-            {eventSections.map((section) => (
-              <div key={section.id} className={styles.drawerSection}>
-                <p className={styles.drawerSectionTitle}>{section.title}</p>
-                {section.id === 'shootout' ? (
-                  <ShootoutGrid
-                    events={section.events}
-                    homeTeamId={fixture.home_team.id}
-                    awayTeamId={fixture.away_team.id}
-                  />
-                ) : (
-                  <div className={styles.eventList}>
-                    {section.events.map((event, i) => (
-                      <EventRow
-                        key={`${section.id}-${event.type}-${event.minute ?? 'null'}-${i}`}
-                        event={event}
-                        awayTeamId={fixture.away_team.id}
-                        showMinute
-                      />
-                    ))}
+            {eventSections.map((section) => {
+              if (section.id === 'shootout') {
+                return (
+                  <div
+                    key={section.id}
+                    className={`${styles.drawerSection} ${styles.drawerSectionShootout}`}
+                  >
+                    <p className={styles.drawerSectionTitle}>{section.title}</p>
+                    <ShootoutPanel
+                      events={section.events}
+                      homeTeamId={fixture.home_team.id}
+                      awayTeamId={fixture.away_team.id}
+                      homeTeamName={fixture.home_team.name}
+                      awayTeamName={fixture.away_team.name}
+                      homePensTotal={fixture.home_penalty_score}
+                      awayPensTotal={fixture.away_penalty_score}
+                    />
                   </div>
-                )}
-              </div>
-            ))}
+                );
+              }
+
+              const body = (
+                <div className={styles.eventList}>
+                  {section.events.map((event, i) => (
+                    <EventRow
+                      key={`${section.id}-${event.type}-${event.minute ?? 'null'}-${i}`}
+                      event={event}
+                      awayTeamId={fixture.away_team.id}
+                    />
+                  ))}
+                </div>
+              );
+
+              if (section.defaultCollapsed) {
+                return (
+                  <CollapsibleSection
+                    key={section.id}
+                    title={section.title}
+                    defaultCollapsed
+                    variant="muted"
+                  >
+                    {body}
+                  </CollapsibleSection>
+                );
+              }
+
+              return (
+                <div key={section.id} className={styles.drawerSection}>
+                  <p className={styles.drawerSectionTitle}>{section.title}</p>
+                  {body}
+                </div>
+              );
+            })}
           </>
         )}
 
-        {/* Stats comparison */}
         {status === 'ready' && hasStats && (
-          <div className={styles.drawerSection}>
-            <p className={styles.drawerSectionTitle}>Team Stats</p>
-            <div className={styles.statList}>
-              {STAT_ROWS.map(({ key, label }) => {
-                const homeVal = homeStat ? (homeStat[key] as number | null) : null;
-                const awayVal = awayStat ? (awayStat[key] as number | null) : null;
-
-                // Skip row when both sides have no data
-                if (homeVal === null && awayVal === null) return null;
-
-                const { homePct, awayPct } = statBarWidths(homeVal, awayVal);
-
-                return (
-                  <div key={key} className={styles.statRow}>
-                    <span className={styles.statLabel}>{label}</span>
-                    <div className={styles.statBarWrap}>
-                      <span className={`${styles.statValue} ${styles.statValueHome}`}>
-                        {homeVal ?? '—'}
-                      </span>
-                      <div className={styles.statBarTrack}>
-                        <div
-                          className={styles.statBarHome}
-                          style={{ width: `${homePct}%` }}
-                        />
-                        <div
-                          className={styles.statBarAway}
-                          style={{ width: `${awayPct}%` }}
-                        />
-                      </div>
-                      <span className={`${styles.statValue} ${styles.statValueAway}`}>
-                        {awayVal ?? '—'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <CollapsibleSection
+            title="Team Stats"
+            defaultCollapsed={statsCollapsed}
+            variant="muted"
+            preview={
+              statsCollapsed ? (
+                <>
+                  <StatRows
+                    rows={teaserStatRows}
+                    homeStat={homeStat}
+                    awayStat={awayStat}
+                  />
+                  <p className={styles.statsExpandHint}>
+                    Expand for corners, cards, and more
+                  </p>
+                </>
+              ) : undefined
+            }
+          >
+            <StatRows rows={STAT_ROWS} homeStat={homeStat} awayStat={awayStat} />
+          </CollapsibleSection>
         )}
 
-        {/* Bottom safe-area padding for notched phones */}
         <div className={styles.drawerSafeArea} />
       </div>
     </>
