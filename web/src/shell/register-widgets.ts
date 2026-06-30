@@ -18,6 +18,14 @@ registerWidget({
   lazy: () => import('../widgets/standings/StandingsWidget'),
 });
 
+registerWidget({
+  id: 'bracket',
+  label: 'Bracket',
+  phase: 6,
+  navOrder: 3,
+  lazy: () => import('../widgets/bracket/BracketWidget'),
+});
+
 export function getCurrentPhase(): number {
   return CURRENT_PHASE;
 }

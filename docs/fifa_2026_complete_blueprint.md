@@ -128,12 +128,12 @@ This document serves as the complete technical architecture and execution roadma
 
 ### Phase 4 — Bracket Widget
 
-- [ ] Bracket DB tables / schema
-- [ ] `GET /api/bracket` endpoint
-- [ ] ESPN or local `fixtures` bracket derivation
-- [ ] `src/widgets/bracket/` — visual knockout tree
-- [ ] Auto-refresh when matches complete
-- [ ] Bracket tab enabled in widget registry
+- [ ] Bracket DB tables / schema _(deferred — client-side derivation from fixtures)_
+- [ ] `GET /api/bracket` endpoint _(deferred — Hub widget only)_
+- [x] ESPN or local `fixtures` bracket derivation (`buildBracketTree` + `bracketTopology`)
+- [x] `src/widgets/bracket/` — visual knockout tree
+- [x] Auto-refresh when matches complete (via existing `FixturesRefreshContext`)
+- [x] Bracket tab enabled in widget registry (`/bracket`, phase 6)
 - [ ] **Phase 4 signed off**
 
 ---
