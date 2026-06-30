@@ -21,6 +21,8 @@
 
 .scrollContainer {
   overflow: auto;
+  /* Bounded viewport so Final jump can scroll vertically inside the bracket */
+  max-height: min(68dvh, 36rem);
   border: 1px solid var(--wc-border);
   border-radius: var(--radius-card);
   background: var(--wc-white);

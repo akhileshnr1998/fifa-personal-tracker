@@ -135,10 +135,42 @@ export function BracketCanvas({
     };
   }, [tree, updateConnectors, markScrollbarsVisible]);
 
-  function jumpToFinal() {
-    scrollRef.current?.scrollTo({
-      left: columnLeft(4) - 16,
+  function scrollMatchToCenter(matchNumber: number) {
+    const scrollContainer = scrollRef.current;
+    const nodeLayout = layout.nodes.get(matchNumber);
+    if (!scrollContainer || !nodeLayout) return;
+
+    const { headerRowHeight, headerGap, columnWidth } = BRACKET_LAYOUT;
+    const centerX = columnLeft(nodeLayout.columnIndex) + columnWidth / 2;
+    const centerY =
+      headerRowHeight + headerGap + nodeLayout.top + nodeLayout.height / 2;
+
+    const maxScrollLeft = Math.max(
+      0,
+      scrollContainer.scrollWidth - scrollContainer.clientWidth,
+    );
+    const maxScrollTop = Math.max(
+      0,
+      scrollContainer.scrollHeight - scrollContainer.clientHeight,
+    );
+
+    scrollContainer.scrollTo({
+      left: Math.min(
+        Math.max(0, centerX - scrollContainer.clientWidth / 2),
+        maxScrollLeft,
+      ),
+      top: Math.min(
+        Math.max(0, centerY - scrollContainer.clientHeight / 2),
+        maxScrollTop,
+      ),
       behavior: 'smooth',
+    });
+  }
+
+  function jumpToFinal() {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    requestAnimationFrame(() => {
+      scrollMatchToCenter(104);
     });
   }
 
