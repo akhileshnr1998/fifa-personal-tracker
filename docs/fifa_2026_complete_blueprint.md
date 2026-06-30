@@ -11,7 +11,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-30 — Phase 8 marked code complete (match summary API + drawer)
+> **Last updated:** 2026-06-30 — Phase 2 Hub marked code complete (top scorers + teams quick-links; summary backfill)
 
 
 
@@ -21,9 +21,9 @@ This document serves as the complete technical architecture and execution roadma
 | Phase   | Scope                             | Status                               |
 | ------- | --------------------------------- | ------------------------------------ |
 | **1**   | Day-wise Fixtures (MVP)           | `[x]` Code complete — deploy pending |
-| **2**   | Hub Widget                        | `[x]` Code complete — live standings/bracket previews |
+| **2**   | Hub Widget                        | `[x]` Code complete — deploy pending |
 | **3**   | Livescore Widget                  | `[ ]` Not started                    |
-| **4**   | Bracket Widget                    | `[ ]` Not started                    |
+| **4**   | Bracket Widget                    | `[x]` Code complete — deploy pending |
 | **5**   | Teams Widget                      | `[ ]` Not started                    |
 | **6**   | Live Standings Widget             | `[x]` Code complete — deploy pending |
 | **7**   | Settings + Notifications          | `[x]` Code complete — deploy pending |
@@ -119,15 +119,12 @@ This document serves as the complete technical architecture and execution roadma
 
 > **Implementation plan:** [`docs/phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md) — gap analysis, API contract, sprints, and test plan.
 
-- [x] `GET /api/hub` aggregated endpoint
-- [x] `src/widgets/hub/` — dashboard composer
-- [x] Compact Fixtures preview embedded
-- [x] Compact Standings preview embedded (live — Phase 6 shipped first)
-- [x] Compact Bracket preview embedded (live — Phase 4 shipped first)
-- [x] Top scorers section (live via `match_events` aggregation)
-- [x] Teams quick-links section (live names grid; full Teams widget Phase 5)
-- [x] Hub tab enabled in widget registry
-- [ ] **Phase 2 signed off**
+- [x] `GET /api/hub` aggregated endpoint (`top_scorers`, `teams_quick_links`)
+- [x] `src/widgets/hub/` — Hub landing widget
+- [x] Top scorers section — `TopScorersService` aggregates `match_events`; `MatchSummaryService.backfillFinishedSummaries()` on hub load
+- [x] Teams quick-links section — live names grid via `TeamsService.getPickerOptions()`
+- [x] Hub tab enabled in widget registry (`navOrder: 0`, default landing at `/`)
+- [ ] **Phase 2 signed off** — pending deploy + manual E2E
 
 ---
 
@@ -401,7 +398,7 @@ The application utilizes an **On-Demand Hydration Strategy** to keep operations 
 | Phase             | Scope                    | User-facing outcome                                     |
 | ----------------- | ------------------------ | ------------------------------------------------------- |
 | **Phase 1 (MVP)** | **Fixtures Widget only** | Day-wise match schedule; no other tabs, no Settings     |
-| Phase 2           | Hub Widget               | Unified tournament dashboard combining multiple widgets |
+| Phase 2           | Hub Widget               | Tournament hub — top scorers and team quick-links (default landing tab) |
 | Phase 3           | Livescore Widget         | Real-time scores and minute-by-minute events            |
 | Phase 4           | Bracket Widget           | Visual knockout tree, auto-updating                     |
 | Phase 5           | Teams Widget             | 48-team squad rosters and player profiles               |
@@ -424,7 +421,7 @@ The SPA is a thin **shell** that lazy-loads independent **widgets**. Each widget
 |  +----------+  +------------------------------------------------+ |
 |       |                                                           |
 |       +-- fixtures/     (Phase 1 — SHIP FIRST)                   |
-|       +-- hub/          (Phase 2 — composes child widgets)       |
+|       +-- hub/          (Phase 2 — top scorers + team quick-links)       |
 |       +-- livescore/    (Phase 3)                                 |
 |       +-- bracket/      (Phase 4)                                 |
 |       +-- teams/        (Phase 5)                                 |
@@ -463,7 +460,7 @@ src/
   shell/           AppShell, Header, WidgetRouter, registry.ts
   widgets/
     fixtures/      Phase 1 — DayWiseFixturesList, MatchCard, useFixtures()
-    hub/           Phase 2 — aggregates other widgets in one scroll view
+    hub/           Phase 2 — top scorers + team quick-links (default `/`)
     livescore/     Phase 3
     bracket/       Phase 4
     teams/         Phase 5
@@ -481,14 +478,14 @@ Widgets to add after Phase 1. Each is a standalone module the Hub can embed or t
 
 | Widget             | What visitors see                                                                                  | Why add it                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Hub**            | Fixtures, group standings, knockout bracket, top scorers, and team profiles in one scrollable view | Full tournament picture without leaving the site          |
+| **Hub**            | Top scorers leaderboard and followable team quick-links in one scrollable view | Hub-only data at `/`; Fixtures, Standings, and Bracket stay on their own tabs |
 | **Livescore**      | Real-time match scores with minute-by-minute events; mobile-friendly                               | Live data on-page—no redirect to external score sites     |
 | **Bracket**        | Visual tournament bracket for World Cup 2026; auto-updates as matches finish                       | Visitors follow knockout progression in-place             |
 | **Teams**          | Full squad overviews for all 48 national teams—player profiles, positions, stats                   | Rosters to browse before and during the tournament        |
 | **Live Standings** | Live group tables as matches play; knockout slots update as teams advance                          | Standings and bracket progression without a separate page |
 
 
-The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions of other widgets and does not duplicate data logic. See [`phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md) for the implementation plan.
+The **Hub Widget** (Phase 2) serves hub-specific tournament data—top scorers (from `match_events` with summary backfill) and team quick-links—not embedded previews of other widgets. See [`phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md).
 
 ### E. Primary User Journey
 
@@ -678,16 +675,16 @@ All API inputs/outputs adopt standard REST communication structures using strict
 
 
 
-### Phase 2–6 — Future Widget APIs (stub; implement when widget ships)
+### Phase 2–6 — Widget APIs
 
 
-| Widget             | Planned endpoints                                                          | Data source                                                              |
+| Widget             | Endpoints                                                                  | Data source                                                              |
 | ------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Hub**            | `GET /api/hub` — aggregated snapshot for dashboard                         | Composes responses from fixtures, standings, bracket, scorers, teams — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
+| **Hub** ✅         | `GET /api/hub` — `{ top_scorers, teams_quick_links }`                      | Scorers from `match_events` (summary backfill on hub load); teams from Postgres — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
 | **Livescore**      | *Deferred*                                                                 | Post-match scores on `GET /api/fixtures` via ESPN refresh                |
-| **Bracket**        | `GET /api/bracket`                                                         | ESPN schedule or local `fixtures` derivation                             |
+| **Bracket** ✅     | `GET /api/bracket`                                                         | Derived from local `fixtures`                                            |
 | **Teams**          | `GET /api/teams`, `GET /api/teams/:id/squad`                               | ESPN teams/roster endpoints                                              |
-| **Live Standings** | `GET /api/standings/groups` ✅ · `GET /api/standings/knockout` *(deferred)* | ESPN `/apis/v2/sports/soccer/fifa.world/standings` — on-demand hydration |
+| **Live Standings** ✅ | `GET /api/standings/groups` · `GET /api/standings/knockout` *(deferred)* | ESPN standings — on-demand hydration                                     |
 
 
 Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from ESPN and upsert when empty or on refresh. See `[docs/espn_api_signatures.md](./espn_api_signatures.md)`.
@@ -962,9 +959,9 @@ Essential for PWA compliance, specifically to enable notification support on mod
 
 
 
-### Phase 2 — Hub Widget
+### Phase 2 — Hub Widget ✅ *(code complete — deploy pending)*
 
-Build `widgets/hub/` as a composer that embeds compact Fixtures + Standings + Bracket + Scorers + Teams previews. Add `GET /api/hub` aggregated endpoint. Enable Hub tab in widget registry.
+Shipped: `GET /api/hub`, `widgets/hub/` (top scorers + team quick-links), Hub as default landing tab (`navOrder: 0`). Top scorers backfill finished-match summaries before aggregating `match_events`.
 
 **Detailed plan:** [`docs/phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md)
 

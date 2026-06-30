@@ -357,7 +357,7 @@ Run: `cd web && npm run dev` — confirm `/bracket` route and tab bar.
 **Files:**
 - Modify: `docs/fifa_2026_complete_blueprint.md` — mark Phase 4 bracket items in progress / complete
 
-- [ ] **Step 1: Update Implementation Status Tracker**
+- [x] **Step 1: Update Implementation Status Tracker** — Phase 4 bracket items marked code complete in blueprint
 
 - [ ] **Step 2: Commit**
 
@@ -380,7 +380,7 @@ Run: `cd web && npm run dev` — confirm `/bracket` route and tab bar.
 
 - Live in-play bracket updates (no polling — refresh only)
 - Zoom / pinch gestures
-- Hub widget embed (Phase 2)
+- Hub widget (Phase 2) — shipped without bracket embed; bracket lives on `/bracket` tab
 - Separate `GET /api/bracket` endpoint (add only when Hub needs it)
 - Group-stage mini-brackets
 

@@ -21,6 +21,7 @@ This app uses **On-Demand Hydration**: Postgres is the source of truth at runtim
 | First standings load (empty DB) | `GET /api/standings/groups` | Yes — full standings sync |
 | Normal standings load | `GET /api/standings/groups` | No — serve from Postgres |
 | User taps **Refresh** → Refresh (standings) | `GET /api/standings/groups?refresh=true` | Yes — re-fetch and upsert |
+| Hub load / refresh | `GET /api/hub` / `GET /api/hub?refresh=true` | Yes on first visit if finished-match summaries missing — batched ESPN summary backfill; then Postgres aggregation |
 | Push reminders | `POST /api/notifications/check-reminders` | No — reads local fixtures only |
 
 **Data scope:** No live minute-by-minute polling. Final scores and fixture updates are pulled on **manual refresh only** — not via cron.
@@ -371,7 +372,7 @@ Unfinished match response:
 | Widget | ESPN endpoint | Notes |
 | :--- | :--- | :--- |
 | Teams (Phase 5) | `/sports/soccer/fifa.world/teams` | Rosters via `/teams/{id}/roster` |
-| Hub scorers (Phase 2) | Derived from `match_events` table (Phase 8) | Goal scorers available once Phase 8 ships — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
+| Hub scorers (Phase 2) ✅ | `match_events` via per-fixture ESPN summary | `GET /api/hub` backfills finished-match summaries then aggregates; see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
 
 All future widgets should follow the same on-demand refresh pattern.
 
@@ -385,7 +386,7 @@ All future widgets should follow the same on-demand refresh pattern.
 4. **Unofficial API** — ESPN may change response shape without notice; keep mapper unit tests with fixture JSON snapshots.
 5. **Fresh database test** — drop all tables or reset Neon branch, run `npm run migration:run:local`, open app → first load hydrates from ESPN.
 6. **Concurrent cold-start protection** — `FixturesService` and `StandingsService` hold an in-flight `syncPromise`; multiple simultaneous requests during Render cold start share one ESPN fetch.
-7. **Rate limiting** — `GET /api/fixtures` is throttled to 20 requests/min per IP by `@nestjs/throttler` to protect against ESPN sync exhaustion. The global default is 30/min across all other endpoints.
+7. **Rate limiting** — `GET /api/fixtures` and `GET /api/hub` are throttled to 20 requests/min per IP by `@nestjs/throttler` to protect ESPN sync paths. The global default is 30/min across all other endpoints.
 
 ---
 
