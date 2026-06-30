@@ -13,21 +13,43 @@ export const KNOCKOUT_MATCH_NUMBERS = Array.from(
 ) as readonly number[];
 
 /**
- * FIFA 2026 knockout progression graph — derived from official bracket flow
- * (Final → SF → QF → R16 → R32), not chronological match_number order.
- *
- * R32 leaf order within each half follows DFS tree order so connector lines
- * do not cross.
+ * ESPN labels like "Round of 32 5 Winner" use FIFA bracket slot numbers (M1–M16),
+ * NOT chronological match_number offset (73 + N − 1). Our match_number comes from
+ * ESPN kickoff sort order, so slot 5 (France–Sweden) is M78, not M77.
+ */
+export const R32_BRACKET_SLOT_TO_MATCH_NUMBER: Readonly<Record<number, number>> =
+  {
+    1: 73,
+    2: 75,
+    3: 76,
+    4: 74,
+    5: 78,
+    6: 77,
+    7: 79,
+    8: 80,
+    9: 82,
+    10: 81,
+    11: 84,
+    12: 83,
+    13: 85,
+    14: 87,
+    15: 88,
+    16: 86,
+  };
+
+/**
+ * FIFA 2026 knockout progression graph — parent pairs derived from ESPN
+ * placeholder labels with R32 bracket-slot mapping above.
  */
 const FIFA_2026_PARENTS: Readonly<Record<number, [number, number]>> = {
   89: [73, 76],
-  90: [75, 77],
-  91: [74, 78],
+  90: [75, 78],
+  91: [74, 77],
   92: [79, 80],
   93: [83, 84],
   94: [81, 82],
-  95: [86, 88],
-  96: [85, 87],
+  95: [86, 87],
+  96: [85, 88],
   97: [89, 90],
   98: [93, 94],
   99: [91, 92],
@@ -39,10 +61,10 @@ const FIFA_2026_PARENTS: Readonly<Record<number, [number, number]>> = {
 };
 
 /** Upper-half R32 leaves in DFS order (feeds SF1 / M101). */
-const UPPER_R32_ORDER = [73, 76, 75, 77, 83, 84, 81, 82] as const;
+const UPPER_R32_ORDER = [73, 76, 75, 78, 83, 84, 81, 82] as const;
 
 /** Lower-half R32 leaves in DFS order (feeds SF2 / M102). */
-const LOWER_R32_ORDER = [74, 78, 79, 80, 86, 88, 85, 87] as const;
+const LOWER_R32_ORDER = [74, 77, 79, 80, 86, 87, 85, 88] as const;
 
 const UPPER_R16_ORDER = [89, 90, 93, 94] as const;
 const LOWER_R16_ORDER = [91, 92, 95, 96] as const;

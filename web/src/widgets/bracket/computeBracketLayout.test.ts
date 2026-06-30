@@ -2,11 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { BRACKET_LAYOUT, computeBracketLayout } from './computeBracketLayout';
 
 describe('computeBracketLayout', () => {
-  it('centers R16 nodes between their R32 parents', () => {
+  it('centers Canada R16 node between its R32 parents', () => {
     const layout = computeBracketLayout();
     const parentA = layout.nodes.get(73)!;
     const parentB = layout.nodes.get(76)!;
     const child = layout.nodes.get(89)!;
+
+    const parentCenter = (parentA.top + parentB.top + parentA.height) / 2;
+    const childCenter = child.top + child.height / 2;
+
+    expect(childCenter).toBeCloseTo(parentCenter, 0);
+  });
+
+  it('centers Paraguay R16 node between Germany and France-Sweden paths', () => {
+    const layout = computeBracketLayout();
+    const parentA = layout.nodes.get(75)!;
+    const parentB = layout.nodes.get(78)!;
+    const child = layout.nodes.get(90)!;
 
     const parentCenter = (parentA.top + parentB.top + parentA.height) / 2;
     const childCenter = child.top + child.height / 2;
