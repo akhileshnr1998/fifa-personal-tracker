@@ -6,6 +6,8 @@ import { MatchStatEntity } from '../match-summary/entities/match-stat.entity';
 import { GroupStandingEntity } from '../standings/entities/group-standing.entity';
 import { TournamentGroupEntity } from '../standings/entities/tournament-group.entity';
 import { TeamEntity } from '../teams/entities/team.entity';
+import { PlayerEntity } from '../teams/entities/player.entity';
+import { TeamSquadMemberEntity } from '../teams/entities/team-squad-member.entity';
 import { FollowedTeamEntity } from '../users/entities/followed-team.entity';
 import { ReminderDispatchEntity } from '../users/entities/reminder-dispatch.entity';
 import { UserEntity } from '../users/entities/user.entity';
@@ -38,6 +40,8 @@ export function getTypeOrmOptions(databaseUrl?: string): DataSourceOptions {
     url,
     entities: [
       TeamEntity,
+      PlayerEntity,
+      TeamSquadMemberEntity,
       VenueEntity,
       UserEntity,
       FixtureEntity,

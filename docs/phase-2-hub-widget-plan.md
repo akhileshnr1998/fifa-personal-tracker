@@ -16,7 +16,7 @@ Phase 2 adds a **Hub Widget** — the default landing tab with tournament **top 
 |------|--------|
 | `GET /api/hub` + `TopScorersService` | ✅ Shipped |
 | Summary backfill for accurate scorers | ✅ `MatchSummaryService.backfillFinishedSummaries()` on hub load |
-| Teams quick-links | ✅ Live via `TeamsService.getPickerOptions()` |
+| Teams quick-links | ✅ Live via `TeamsService.getPickerOptions()`; links to `/teams?team={id}` (Phase 5) |
 | Hub widget + registry | ✅ Shipped |
 | Embedded Fixtures/Standings/Bracket previews | ⏭️ Deferred — product decision; use dedicated widget tabs |
 
@@ -29,7 +29,7 @@ From the [Implementation Status Tracker](./fifa_2026_complete_blueprint.md#phase
 - [x] `GET /api/hub` aggregated endpoint
 - [x] `src/widgets/hub/` — Hub widget
 - [x] Top scorers section (live via `match_events` + summary backfill)
-- [x] Teams quick-links section (live names grid)
+- [x] Teams quick-links section — live names grid; each chip links to Teams widget squad (`/teams?team={id}`)
 - [x] Hub tab enabled in widget registry (default landing)
 - [ ] Compact Fixtures / Standings / Bracket previews *(deferred — not in shipped scope)*
 - [ ] **Phase 2 signed off**
@@ -43,7 +43,7 @@ From the [Implementation Status Tracker](./fifa_2026_complete_blueprint.md#phase
 | Module | Endpoint | Hub use |
 |--------|----------|---------|
 | `MatchSummaryModule` | `GET /api/fixtures/:id/summary` | Backfills `match_events` for finished fixtures on hub load |
-| `TeamsModule` | `GET /api/teams/names` | Team quick-link grid |
+| `TeamsModule` | `GET /api/teams/names` | Team quick-link grid (links to Phase 5 `GET /api/teams/:id/squad` via `/teams?team={id}`) |
 | `FixturesModule` | `GET /api/fixtures` | Optional `?refresh=true` sync before hub read |
 
 `AppModule` registers `HubModule` alongside Fixtures, Bracket, Standings, MatchSummary, Teams, Users, and Notifications.
@@ -66,7 +66,8 @@ Widget registry (`web/src/shell/register-widgets.ts`):
 | Hub | 2 | 0 | `/` (default) |
 | Fixtures | 1 | 1 | `/fixtures` |
 | Standings | 6 | 2 | `/standings` |
-| Bracket | 6 | 3 | `/bracket` |
+| Teams | 5 | 3 | `/teams` |
+| Bracket | 6 | 4 | `/bracket` |
 
 ### Top scorers data source
 
@@ -143,7 +144,7 @@ Hub is a lightweight scroll view — **not** a composer of other widget previews
 
 - `useHub` + `api.ts` — cache/retry pattern
 - `HubSkeleton` — cold-start UX
-- `TopScorersSection`, `TeamsQuickLinksSection`
+- `TopScorersSection`, `TeamsQuickLinksSection` — team chips are `<Link to="/teams?team={id}">`
 - Header **Refresh** → `GET /api/hub?refresh=true` when Hub is mounted
 
 ---
@@ -214,7 +215,7 @@ From [`product_architect_agent.md`](./product_architect_agent.md):
 
 1. Open Hub (default `/`) → scorers populate after first backfill.
 2. Header Refresh → scorers update for newly finished matches.
-3. Teams grid shows followable nations; followed teams highlighted.
+3. Teams grid shows followable nations; followed teams highlighted; tap opens Teams widget squad.
 4. Fixtures / Standings / Bracket tabs unchanged and reachable from nav.
 
 ---
@@ -226,6 +227,7 @@ Updated [`fifa_2026_complete_blueprint.md`](./fifa_2026_complete_blueprint.md):
 - Phase overview: Phase 2 → `[x]` Code complete
 - Phase 2 checklist reflects shipped scope (scorers + teams)
 - Hub API table marked ✅ shipped
+- Phase 5 Teams widget marked `[x]` Code complete; Hub quick-links link to `/teams?team={id}`
 
 ---
 
@@ -235,6 +237,6 @@ Updated [`fifa_2026_complete_blueprint.md`](./fifa_2026_complete_blueprint.md):
 |----------|-----------|
 | [`fifa_2026_complete_blueprint.md`](./fifa_2026_complete_blueprint.md) | Phase 2 scope, widget platform contract |
 | [`product_architect_agent.md`](./product_architect_agent.md) | Hydration pattern, UX guardrails, SOLID |
-| [`espn_api_signatures.md`](./espn_api_signatures.md) | Hub scorers derivation from `match_events` |
+| [`espn_api_signatures.md`](./espn_api_signatures.md) | Hub scorers derivation from `match_events`; Teams/roster endpoints (§7) |
 | `web/src/shell/registry.ts` | `TournamentWidget` contract |
 | `api/src/match-summary/entities/match-event.entity.ts` | Top scorers source table |

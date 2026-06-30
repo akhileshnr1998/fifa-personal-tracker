@@ -47,6 +47,8 @@ describe('UserService', () => {
           name: 'Mexico',
           is_placeholder: false,
           espn_team_id: 203,
+          abbreviation: null,
+          slug: null,
           updated_at: new Date(),
         },
       ]),

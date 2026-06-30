@@ -1,4 +1,5 @@
 import type { TopScorerEntry } from '../types';
+import { TeamFlagLabel } from '../TeamFlagLabel';
 import styles from '../hub.module.css';
 
 interface TopScorersSectionProps {
@@ -24,7 +25,9 @@ export function TopScorersSection({ available, entries }: TopScorersSectionProps
               <span className={styles.scorerRank}>{entry.rank}</span>
               <span className={styles.scorerInfo}>
                 <span className={styles.scorerName}>{entry.player_name}</span>
-                <span className={styles.scorerTeam}>{entry.team.name}</span>
+                <span className={styles.scorerTeam}>
+                  <TeamFlagLabel name={entry.team.name} size="sm" />
+                </span>
               </span>
               <span className={styles.scorerGoals}>
                 {entry.goals} {entry.goals === 1 ? 'goal' : 'goals'}

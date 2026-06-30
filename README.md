@@ -1,6 +1,6 @@
 # FIFA World Cup 2026 — Fixtures PWA
 
-Zero-budget Progressive Web App that shows day-grouped WC 2026 fixtures and delivers native Web Push notifications before kickoff. No paid APIs — fixtures and scores are pulled on-demand from ESPN's public scoreboard.
+Zero-budget Progressive Web App for the FIFA World Cup 2026 — day-grouped fixtures, hub dashboard, standings, bracket, team squads, and Web Push kickoff reminders. No paid APIs: fixtures, scores, standings, and rosters hydrate on-demand from ESPN's public JSON.
 
 **Stack:** NestJS + TypeORM + Neon Postgres (API) · Vite + React (web) · Render (API host) · Vercel/Netlify (web host)
 
@@ -39,7 +39,7 @@ npm run migration:run:local
 npm run start:dev       # http://localhost:3000
 ```
 
-Fixtures are hydrated on first request. Call `GET /api/fixtures?refresh=true` to re-sync scores from ESPN at any time.
+Fixtures are hydrated on first request. Call `GET /api/fixtures?refresh=true` to re-sync scores from ESPN at any time. Teams (`GET /api/teams`) and per-nation squads (`GET /api/teams/:id/squad`) follow the same on-demand pattern — see [`docs/espn_api_signatures.md`](docs/espn_api_signatures.md).
 
 ### 3. Web
 
@@ -99,6 +99,21 @@ Users configure notification timing (5 min → 1 day before kickoff) and followe
 
 ---
 
+## Widgets (shipped)
+
+| Tab | Route | API |
+| :--- | :--- | :--- |
+| Hub | `/` | `GET /api/hub` |
+| Fixtures | `/fixtures` | `GET /api/fixtures` |
+| Standings | `/standings` | `GET /api/standings/groups` |
+| Teams | `/teams` | `GET /api/teams`, `GET /api/teams/:id/squad` |
+| Bracket | `/bracket` | `GET /api/bracket` |
+| Settings | `/settings` | `PUT /api/user/settings` |
+
+Implementation status and phase checklist: [`docs/fifa_2026_complete_blueprint.md`](docs/fifa_2026_complete_blueprint.md).
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -117,13 +132,14 @@ flowchart TD
 
     subgraph DB["Neon Postgres"]
         T["teams"]
+        P["players / team_squad_members"]
         V["venues"]
         FX["fixtures"]
         U["users"]
         RD["reminder_dispatches"]
     end
 
-    ESPN["ESPN Scoreboard\n(public JSON)"]
+    ESPN["ESPN Public JSON\n(scoreboard, standings, teams/roster)"]
 
     UI -- "GET /api/fixtures" --> FC
     FC -- "DB empty or ?refresh=true" --> FS
@@ -145,7 +161,7 @@ flowchart TD
 
 ## Key design decisions
 
-- **On-demand hydration:** fixtures are fetched from ESPN only when the DB is empty or `?refresh=true` is passed — always user-triggered.
-- **Normalized schema:** `teams` and `venues` are lookup tables; fixtures and followed-team preferences reference their IDs.
+- **On-demand hydration:** ESPN is called only when the DB is empty or `?refresh=true` is passed — always user-triggered (fixtures, standings, teams list, per-team squads).
+- **Normalized schema:** `teams`, `venues`, `players`, and `team_squad_members` are lookup tables; fixtures and followed-team preferences reference team IDs.
 - **One push per match:** `reminder_dispatches` deduplicates on `(user_id, fixture_id)` so no duplicate alerts.
 - **Zero-cost infra:** Web Push (VAPID) only — no SMS, no paid notification gateway.

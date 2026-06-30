@@ -12,6 +12,8 @@ function makeTeam(id: number, name: string): TeamEntity {
     name,
     is_placeholder: false,
     espn_team_id: id,
+    abbreviation: null,
+    slug: null,
     updated_at: new Date(),
   };
 }

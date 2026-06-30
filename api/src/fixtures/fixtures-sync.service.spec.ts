@@ -257,6 +257,8 @@ describe('FixturesSyncService', () => {
           name: 'Mexico',
           is_placeholder: false,
           espn_team_id: 203,
+          abbreviation: null,
+          slug: null,
           updated_at: new Date(),
         },
         away_team: {
@@ -264,6 +266,8 @@ describe('FixturesSyncService', () => {
           name: 'South Africa',
           is_placeholder: false,
           espn_team_id: 467,
+          abbreviation: null,
+          slug: null,
           updated_at: new Date(),
         },
         venue: {

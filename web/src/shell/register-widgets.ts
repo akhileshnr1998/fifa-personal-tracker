@@ -27,10 +27,18 @@ registerWidget({
 });
 
 registerWidget({
+  id: 'teams',
+  label: 'Teams',
+  phase: 5,
+  navOrder: 3,
+  lazy: () => import('../widgets/teams/TeamsWidget'),
+});
+
+registerWidget({
   id: 'bracket',
   label: 'Bracket',
   phase: 6,
-  navOrder: 3,
+  navOrder: 4,
   lazy: () => import('../widgets/bracket/BracketWidget'),
 });
 

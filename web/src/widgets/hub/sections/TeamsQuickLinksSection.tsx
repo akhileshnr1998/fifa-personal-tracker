@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { TeamQuickLink } from '../types';
+import { TeamFlagLabel } from '../TeamFlagLabel';
 import styles from '../hub.module.css';
 
 interface TeamsQuickLinksSectionProps {
@@ -31,15 +32,16 @@ export function TeamsQuickLinksSection({
       ) : (
         <div className={styles.teamsGrid}>
           {previewTeams.map((team) => (
-            <span
+            <Link
               key={team.id}
+              to={`/teams?team=${team.id}`}
               className={[
                 styles.teamChip,
                 followedTeamIds.includes(team.id) ? styles.teamChipFollowed : '',
               ].join(' ')}
             >
-              {team.name}
-            </span>
+              <TeamFlagLabel name={team.name} size="sm" />
+            </Link>
           ))}
         </div>
       )}

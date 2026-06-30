@@ -11,7 +11,7 @@ This document serves as the complete technical architecture and execution roadma
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-30 — Phase 2 Hub marked code complete (top scorers + teams quick-links; summary backfill)
+> **Last updated:** 2026-06-30 — Phase 5 Teams widget code complete (squads + roster browser)
 
 
 
@@ -24,7 +24,7 @@ This document serves as the complete technical architecture and execution roadma
 | **2**   | Hub Widget                        | `[x]` Code complete — deploy pending |
 | **3**   | Livescore Widget                  | `[ ]` Not started                    |
 | **4**   | Bracket Widget                    | `[x]` Code complete — deploy pending |
-| **5**   | Teams Widget                      | `[ ]` Not started                    |
+| **5**   | Teams Widget                      | `[x]` Code complete — deploy pending |
 | **6**   | Live Standings Widget             | `[x]` Code complete — deploy pending |
 | **7**   | Settings + Notifications          | `[x]` Code complete — deploy pending |
 | **7.1** | Reminder timing preference        | `[x]` Code complete — deploy pending |
@@ -40,6 +40,7 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] Neon.tech Postgres cluster provisioned *(manual — see README)*
 - [x] `fixtures` table managed via TypeORM entity + migration
 - [x] `teams` table — normalized participants referenced by ID across fixtures and notifications
+- [x] `players` + `team_squad_members` tables — squad rosters (migration `1749760000000-CreatePlayersAndSquadTables.ts`)
 - [x] `venues` table — normalized stadiums referenced by `fixtures.venue_id`
 - [x] NestJS API project scaffolded (Render-ready)
 - [x] TypeORM configured with Neon connection and versioned migrations
@@ -122,7 +123,7 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `GET /api/hub` aggregated endpoint (`top_scorers`, `teams_quick_links`)
 - [x] `src/widgets/hub/` — Hub landing widget
 - [x] Top scorers section — `TopScorersService` aggregates `match_events`; `MatchSummaryService.backfillFinishedSummaries()` on hub load
-- [x] Teams quick-links section — live names grid via `TeamsService.getPickerOptions()`
+- [x] Teams quick-links section — links to Teams widget squads (`/teams?team={id}`)
 - [x] Hub tab enabled in widget registry (`navOrder: 0`, default landing at `/`)
 - [ ] **Phase 2 signed off** — pending deploy + manual E2E
 
@@ -162,14 +163,33 @@ This document serves as the complete technical architecture and execution roadma
 
 ### Phase 5 — Teams Widget
 
-- [ ] Teams / players DB tables
-- [ ] `GET /api/teams` — all 48 national teams
-- [ ] `GET /api/teams/:id/squad` — roster + player profiles
-- [ ] ESPN teams/roster hydration
-- [ ] `src/widgets/teams/` — team browser
-- [ ] Player profiles — position, stats
-- [ ] Teams tab enabled in widget registry
-- [ ] **Phase 5 signed off**
+**Database**
+
+- [x] `players` table migration authored (`1749760000000-CreatePlayersAndSquadTables.ts`)
+- [x] `team_squad_members` table — jersey numbers linking players to teams
+- [x] `teams.abbreviation` + `teams.slug` columns for enriched profiles
+- [ ] Migrations applied in Neon *(run* `npm run migration:run` *before deploy)*
+
+**Backend**
+
+- [x] `PlayerEntity` + `TeamSquadMemberEntity` TypeORM entities
+- [x] `TeamsSyncService` — ESPN on-demand hydration (`/teams`)
+- [x] `SquadSyncService` — per-team roster hydration (`/teams/{id}/roster`)
+- [x] `GET /api/teams` — all 48 national teams (sync when &lt; 48 teams or `?refresh=true`)
+- [x] `GET /api/teams/:id/squad` — roster + player profiles (sync on first view or `?refresh=true`)
+- [x] In-flight `syncPromise` guards on teams list and per-team squad sync
+- [x] New entities registered in `typeorm.options.ts`
+
+**Frontend**
+
+- [x] `src/widgets/teams/` — searchable 48-team browser + squad detail view
+- [x] Player profiles — jersey, position, age, goals, assists, appearances, cards
+- [x] Country flags via `teamFlags.ts`; followed-team ★ highlights
+- [x] Deep links via `?team={id}` (Hub quick-links navigate here)
+- [x] Skeleton loader, empty states, header **Refresh** integration
+- [x] Teams tab enabled in widget registry (`/teams`, phase 5, `navOrder: 3`)
+
+- [ ] **Phase 5 signed off** — pending migration + deploy
 
 ---
 
@@ -604,7 +624,7 @@ Migrations: `1749523200000-CreateFixturesTable.ts` (base), `1749523800000-Normal
 Scores: `1749523600000-AddFixtureScores.ts`.  
 Seed migration `1749523300000-SeedWorldCup2026Fixtures` is a **no-op** — teams + fixtures hydrate from ESPN on first API call.
 
-### Future phases — planned entities (add via new migrations)
+### Additional entities *(shipped via migrations)*
 
 **Users** (Phase 7 + 7.1):
 
@@ -636,6 +656,17 @@ Seed migration `1749523300000-SeedWorldCup2026Fixtures` is a **no-op** — teams
 // FK group_id → tournament_groups ON DELETE CASCADE
 // FK team_id → teams ON DELETE CASCADE
 // indexes: (group_id, rank), team_id
+```
+
+**Players & squads** (Phase 5):
+
+```typescript
+// players — id, full_name, display_name, position, position_abbr, age,
+// height_display, weight_display, appearances, goals, assists,
+// yellow_cards, red_cards, espn_athlete_id, updated_at
+// team_squad_members — composite PK (team_id, player_id), jersey
+// FK team_id → teams ON DELETE CASCADE, FK player_id → players ON DELETE CASCADE
+// teams.abbreviation, teams.slug — enriched national team profiles
 ```
 
 ---
@@ -683,7 +714,7 @@ All API inputs/outputs adopt standard REST communication structures using strict
 | **Hub** ✅         | `GET /api/hub` — `{ top_scorers, teams_quick_links }`                      | Scorers from `match_events` (summary backfill on hub load); teams from Postgres — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
 | **Livescore**      | *Deferred*                                                                 | Post-match scores on `GET /api/fixtures` via ESPN refresh                |
 | **Bracket** ✅     | `GET /api/bracket`                                                         | Derived from local `fixtures`                                            |
-| **Teams**          | `GET /api/teams`, `GET /api/teams/:id/squad`                               | ESPN teams/roster endpoints                                              |
+| **Teams** ✅         | `GET /api/teams`, `GET /api/teams/:id/squad`                               | ESPN teams/roster — on-demand hydration (list sync + per-team roster)  |
 | **Live Standings** ✅ | `GET /api/standings/groups` · `GET /api/standings/knockout` *(deferred)* | ESPN standings — on-demand hydration                                     |
 
 
@@ -696,7 +727,7 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 #### 2. List Teams (Settings Team Picker)
 
 - **Endpoint:** `GET /api/teams/names`
-- **Description:** Returns followable teams from the `teams` table (`is_placeholder = false`), sorted by name. Powers the Settings multi-select. *(Distinct from future* `GET /api/teams` *which returns full team profiles in Phase 5.)*
+- **Description:** Returns followable teams from the `teams` table (`is_placeholder = false`), sorted by name. Powers the Settings multi-select. *(Distinct from* `GET /api/teams` *which returns full team profiles with abbreviation/slug for the Teams widget.)*
 - **Response Payload (**`200 OK`**):**
 
 ```json
@@ -969,13 +1000,13 @@ Shipped: `GET /api/hub`, `widgets/hub/` (top scorers + team quick-links), Hub as
 
 Deferred — final scores display on Fixtures widget via ESPN refresh. Add `GET /api/livescore` only if live minute-by-minute UI is needed later.
 
-### Phase 4 — Bracket Widget
+### Phase 4 — Bracket Widget ✅ *(code complete — deploy pending)*
 
-Add bracket schema + `GET /api/bracket`. Build `widgets/bracket/` with visual knockout tree; auto-refresh on match completion.
+Shipped: `GET /api/bracket`, `widgets/bracket/` visual knockout tree, auto-refresh via `FixturesRefreshContext`.
 
-### Phase 5 — Teams Widget
+### Phase 5 — Teams Widget ✅ *(code complete — deploy pending)*
 
-Add teams/players tables + `GET /api/teams`, `GET /api/teams/:id/squad`. Build `widgets/teams/` with 48-team roster browser and player profiles.
+Shipped: `players` + `team_squad_members` schema, `GET /api/teams`, `GET /api/teams/:id/squad`, ESPN teams/roster on-demand hydration, `widgets/teams/` roster browser with squad detail view. Hub team quick-links deep-link to `/teams?team={id}`.
 
 ### Phase 6 — Live Standings Widget
 

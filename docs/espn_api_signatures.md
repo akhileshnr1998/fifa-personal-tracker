@@ -5,7 +5,7 @@
 > - [ESPN hidden API gist](https://gist.github.com/akeaswaran/b48b02f1c94f873c6655e7129910fc3b)
 > - Mapped to requirements in [`fifa_2026_complete_blueprint.md`](./fifa_2026_complete_blueprint.md)
 >
-> **Last updated:** 2026-06-12
+> **Last updated:** 2026-06-30
 
 ---
 
@@ -21,6 +21,11 @@ This app uses **On-Demand Hydration**: Postgres is the source of truth at runtim
 | First standings load (empty DB) | `GET /api/standings/groups` | Yes — full standings sync |
 | Normal standings load | `GET /api/standings/groups` | No — serve from Postgres |
 | User taps **Refresh** → Refresh (standings) | `GET /api/standings/groups?refresh=true` | Yes — re-fetch and upsert |
+| First teams load (< 48 teams) | `GET /api/teams` | Yes — ESPN teams list sync |
+| Normal teams load | `GET /api/teams` | No — serve from Postgres |
+| User taps **Refresh** → Refresh (teams) | `GET /api/teams?refresh=true` | Yes — re-fetch team profiles |
+| First squad load per team | `GET /api/teams/:id/squad` | Yes — ESPN roster sync for that team |
+| Normal squad load | `GET /api/teams/:id/squad` | No — serve from Postgres |
 | Hub load / refresh | `GET /api/hub` / `GET /api/hub?refresh=true` | Yes on first visit if finished-match summaries missing — batched ESPN summary backfill; then Postgres aggregation |
 | Push reminders | `POST /api/notifications/check-reminders` | No — reads local fixtures only |
 
@@ -367,14 +372,85 @@ Unfinished match response:
 
 ---
 
-## 7. Future Phases — Additional ESPN Endpoints
+## 7. Teams & Squad Endpoints (Phase 5)
 
-| Widget | ESPN endpoint | Notes |
-| :--- | :--- | :--- |
-| Teams (Phase 5) | `/sports/soccer/fifa.world/teams` | Rosters via `/teams/{id}/roster` |
-| Hub scorers (Phase 2) ✅ | `match_events` via per-fixture ESPN summary | `GET /api/hub` backfills finished-match summaries then aggregates; see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
+**Used by:** `TeamsSyncService.syncFromEspn()` when fewer than 48 teams exist or `?refresh=true`; `SquadSyncService.syncTeamSquadFromEspn()` on first squad request or `?refresh=true`.
 
-All future widgets should follow the same on-demand refresh pattern.
+```http
+GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams
+GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams/{espn_team_id}/roster
+```
+
+### 7.1 Teams list → DB mapping
+
+| ESPN field | Maps to DB |
+| :--- | :--- |
+| `team.id` | `teams.id` / `teams.espn_team_id` |
+| `team.displayName` | `teams.name` |
+| `team.abbreviation` | `teams.abbreviation` |
+| `team.slug` | `teams.slug` |
+
+### 7.2 Roster → DB mapping
+
+| ESPN field | Maps to DB |
+| :--- | :--- |
+| `athletes[].id` | `players.id` / `players.espn_athlete_id` |
+| `athletes[].fullName` | `players.full_name` |
+| `athletes[].displayName` | `players.display_name` |
+| `athletes[].position.name` | `players.position` |
+| `athletes[].position.abbreviation` | `players.position_abbr` |
+| `athletes[].jersey` | `team_squad_members.jersey` |
+| `statistics…appearances` | `players.appearances` |
+| `statistics…totalGoals` | `players.goals` |
+| `statistics…goalAssists` | `players.assists` |
+| `statistics…yellowCards` | `players.yellow_cards` |
+| `statistics…redCards` | `players.red_cards` |
+
+### 7.3 Our API responses
+
+`GET /api/teams`:
+
+```json
+[
+  {
+    "id": 203,
+    "name": "Mexico",
+    "abbreviation": "MEX",
+    "slug": "mex"
+  }
+]
+```
+
+`GET /api/teams/203/squad`:
+
+```json
+{
+  "team": {
+    "id": 203,
+    "name": "Mexico",
+    "abbreviation": "MEX",
+    "slug": "mex"
+  },
+  "players": [
+    {
+      "id": 137038,
+      "full_name": "Guillermo Ochoa",
+      "display_name": "Guillermo Ochoa",
+      "jersey": "13",
+      "position": "Goalkeeper",
+      "position_abbr": "G",
+      "age": 40,
+      "height_display": "6' 3\"",
+      "weight_display": "185 lbs",
+      "appearances": 1,
+      "goals": 0,
+      "assists": 0,
+      "yellow_cards": 0,
+      "red_cards": 0
+    }
+  ]
+}
+```
 
 ---
 
@@ -385,7 +461,7 @@ All future widgets should follow the same on-demand refresh pattern.
 3. **Rate limits** — One HTTP call per refresh; be respectful (no polling).
 4. **Unofficial API** — ESPN may change response shape without notice; keep mapper unit tests with fixture JSON snapshots.
 5. **Fresh database test** — drop all tables or reset Neon branch, run `npm run migration:run:local`, open app → first load hydrates from ESPN.
-6. **Concurrent cold-start protection** — `FixturesService` and `StandingsService` hold an in-flight `syncPromise`; multiple simultaneous requests during Render cold start share one ESPN fetch.
+6. **Concurrent cold-start protection** — `FixturesService`, `StandingsService`, and `TeamsService` hold in-flight `syncPromise` guards; squad sync dedupes per `team_id` during concurrent requests.
 7. **Rate limiting** — `GET /api/fixtures` and `GET /api/hub` are throttled to 20 requests/min per IP by `@nestjs/throttler` to protect ESPN sync paths. The global default is 30/min across all other endpoints.
 
 ---

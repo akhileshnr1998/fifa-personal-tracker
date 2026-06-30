@@ -22,6 +22,12 @@ export class TeamEntity {
   @Column({ type: 'int', nullable: true })
   espn_team_id!: number | null;
 
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  abbreviation!: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  slug!: string | null;
+
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date;
 }
