@@ -239,6 +239,7 @@
   padding-top: var(--space-3);
   padding-bottom: var(--space-3);
   margin-bottom: var(--section-gap);
+  isolation: isolate;
 }
 
 .tabBarSticky::after {
@@ -263,26 +264,19 @@
 }
 
 .tabBar {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
   background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
   border: 1px solid var(--wc-border);
   border-radius: var(--radius-banner);
   box-shadow: 0 4px 16px rgba(10, 22, 40, 0.04);
 }
 
-.tabBar::-webkit-scrollbar {
-  display: none;
-}
-
 .tab {
-  flex: 1 1 0;
-  min-width: max-content;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,6 +304,230 @@
   color: var(--wc-white);
   border-color: var(--wc-purple);
   box-shadow: 0 2px 8px rgba(107, 32, 200, 0.22);
+}
+
+/* ── Mobile widget picker (bottom sheet) ─────────────────────────── */
+.navPickerTrigger {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-banner);
+  border: 1px solid var(--wc-border);
+  background: linear-gradient(135deg, var(--wc-purple-soft) 0%, #fff 55%, var(--wc-magenta-soft) 100%);
+  box-shadow: 0 4px 16px rgba(10, 22, 40, 0.06);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--wc-navy);
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.navPickerTrigger:hover {
+  border-color: rgba(107, 32, 200, 0.28);
+  box-shadow: 0 6px 20px rgba(107, 32, 200, 0.12);
+}
+
+.navPickerTrigger:active {
+  transform: scale(0.99);
+}
+
+.navPickerTriggerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-chip);
+  background: rgba(255, 255, 255, 0.88);
+  font-size: 1.05rem;
+  flex-shrink: 0;
+}
+
+.navPickerTriggerLabel {
+  flex: 1;
+  text-align: left;
+  letter-spacing: -0.02em;
+}
+
+.navPickerTriggerChevron {
+  color: var(--wc-purple);
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.navPickerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 22, 40, 0.45);
+  z-index: 299;
+  animation: navPickerFadeIn 0.2s ease forwards;
+}
+
+.navPickerBackdropClosing {
+  animation: navPickerFadeOut 0.22s ease forwards;
+}
+
+.navPickerSheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  max-height: 72vh;
+  background: var(--wc-white);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 -8px 40px rgba(107, 32, 200, 0.18);
+  animation: navPickerSlideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.navPickerSheetClosing {
+  animation: navPickerSlideDown 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.navPickerHandle {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.navPickerHandleBar {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--wc-border);
+}
+
+.navPickerTitle {
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wc-muted);
+}
+
+.navPickerList {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.navPickerItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--wc-border);
+  background: var(--wc-surface);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--wc-navy);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.navPickerItem:hover {
+  background: #fff;
+  border-color: rgba(107, 32, 200, 0.2);
+}
+
+.navPickerItem:active {
+  transform: scale(0.99);
+}
+
+.navPickerItemActive {
+  background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
+  border-color: var(--wc-purple);
+  color: var(--wc-white);
+  box-shadow: 0 4px 16px rgba(107, 32, 200, 0.24);
+}
+
+.navPickerItemActive:hover {
+  background: linear-gradient(135deg, var(--wc-purple) 0%, var(--wc-purple-bright) 100%);
+  border-color: var(--wc-purple);
+}
+
+.navPickerItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-chip);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.navPickerItemActive .navPickerItemIcon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.navPickerItemLabel {
+  flex: 1;
+  text-align: left;
+  letter-spacing: -0.01em;
+}
+
+.navPickerItemCheck {
+  font-size: 1rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.navPickerSafeArea {
+  height: env(safe-area-inset-bottom, 0);
+}
+
+@keyframes navPickerFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes navPickerFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes navPickerSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes navPickerSlideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 .loadingState {
