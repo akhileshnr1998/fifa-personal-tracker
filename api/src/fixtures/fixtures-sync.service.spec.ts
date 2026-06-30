@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { TeamEntity } from '../teams/entities/team.entity';
 import { VenueEntity } from '../venues/entities/venue.entity';
 import { FixtureEntity } from './entities/fixture.entity';
-import { mapEspnEvents } from './espn.mapper';
+import { mapEspnEvent, mapEspnEvents } from './espn.mapper';
 import { FixturesSyncService } from './fixtures-sync.service';
 
 describe('FixturesSyncService', () => {
@@ -142,6 +142,50 @@ describe('FixturesSyncService', () => {
     expect(mapped.venue_id).toBe(1672);
   });
 
+  it('maps penalty shootout scores and decided_by', () => {
+    const entity = mapEspnEvent(
+      {
+        id: '760489',
+        date: '2026-06-30T19:00Z',
+        season: { slug: 'round-of-32' },
+        competitions: [
+          {
+            startDate: '2026-06-30T19:00Z',
+            status: {
+              type: {
+                name: 'STATUS_FINAL_PEN',
+                state: 'post',
+                completed: true,
+                detail: 'FT-Pens',
+              },
+            },
+            competitors: [
+              {
+                homeAway: 'home',
+                score: '1',
+                shootoutScore: 3,
+                team: { id: '481', displayName: 'Germany' },
+              },
+              {
+                homeAway: 'away',
+                score: '1',
+                shootoutScore: 4,
+                team: { id: '490', displayName: 'Paraguay' },
+              },
+            ],
+          },
+        ],
+      },
+      50,
+    );
+
+    expect(entity.home_score).toBe(1);
+    expect(entity.away_score).toBe(1);
+    expect(entity.home_penalty_score).toBe(3);
+    expect(entity.away_penalty_score).toBe(4);
+    expect(entity.decided_by).toBe('penalties');
+  });
+
   it('upserts venues from competition.venue when event.venue is missing', async () => {
     await service.upsertVenuesFromEvents([
       {
@@ -233,6 +277,9 @@ describe('FixturesSyncService', () => {
         status: 'scheduled',
         home_score: null,
         away_score: null,
+        decided_by: 'regulation',
+        home_penalty_score: null,
+        away_penalty_score: null,
         summary_fetched: false,
         updated_at: new Date(),
       },

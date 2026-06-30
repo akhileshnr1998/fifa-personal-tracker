@@ -31,9 +31,22 @@ export interface EspnKeyEvent {
   athletesInvolved?: EspnSummaryAthlete[] | null;
 }
 
+export interface EspnShootoutShot {
+  player?: string;
+  shotNumber?: number;
+  didScore?: boolean;
+}
+
+export interface EspnShootoutTeam {
+  id?: string;
+  team?: string;
+  shots?: EspnShootoutShot[];
+}
+
 export interface EspnSummaryResponse {
   scoringPlays?: EspnScoringPlay[];
   keyEvents?: EspnKeyEvent[];
+  shootout?: EspnShootoutTeam[];
   boxscore?: {
     teams?: EspnBoxscoreTeam[];
   };

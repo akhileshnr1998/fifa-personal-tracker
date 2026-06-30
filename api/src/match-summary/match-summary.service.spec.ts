@@ -29,6 +29,9 @@ function makeFixture(overrides: Partial<FixtureEntity> = {}): FixtureEntity {
     status: 'finished',
     home_score: 2,
     away_score: 1,
+    decided_by: 'regulation',
+    home_penalty_score: null,
+    away_penalty_score: null,
     summary_fetched: false,
     updated_at: new Date(),
     ...overrides,
@@ -497,5 +500,118 @@ describe('MatchSummaryService', () => {
     const result = await service.getSummary(760415);
 
     expect((result as any).events[0].assist_name).toBeNull();
+  });
+
+  it('appends shootout events after regulation events', async () => {
+    fixturesRepository.findOne.mockResolvedValue(makeFixture());
+    httpService.get.mockReturnValue(
+      of({
+        data: {
+          scoringPlays: [
+            {
+              type: { text: 'Goal' },
+              team: { id: '481' },
+              clock: { displayValue: "42'" },
+              athletesInvolved: [{ displayName: 'Julio Enciso' }],
+            },
+            {
+              type: { text: 'Goal' },
+              team: { id: '490' },
+              clock: { displayValue: "54'" },
+              athletesInvolved: [{ displayName: 'Kai Havertz' }],
+            },
+          ],
+          shootout: [
+            {
+              id: '481',
+              team: 'Germany',
+              shots: [
+                { player: 'Kai Havertz', shotNumber: 1, didScore: false },
+                { player: 'Joshua Kimmich', shotNumber: 2, didScore: true },
+              ],
+            },
+            {
+              id: '490',
+              team: 'Paraguay',
+              shots: [{ player: 'Julio Enciso', shotNumber: 1, didScore: true }],
+            },
+          ],
+          boxscore: { teams: [] },
+        },
+      }),
+    );
+
+    const result = await service.getSummary(760415);
+
+    const types = (result as any).events.map((e: { type: string }) => e.type);
+    expect(types).toContain('shootout_goal');
+    expect(types).toContain('shootout_miss');
+    expect(types.indexOf('shootout_goal')).toBeGreaterThan(
+      types.lastIndexOf('goal'),
+    );
+  });
+
+  it('parses "105\'" as minute 105 with is_extra_time true', async () => {
+    fixturesRepository.findOne.mockResolvedValue(makeFixture());
+    httpService.get.mockReturnValue(
+      of({
+        data: {
+          scoringPlays: [
+            {
+              type: { text: 'Goal' },
+              team: { id: '203' },
+              clock: { displayValue: "105'" },
+              athletesInvolved: [{ displayName: 'Striker' }],
+            },
+          ],
+          boxscore: { teams: [] },
+        },
+      }),
+    );
+
+    const result = await service.getSummary(760415);
+
+    expect((result as any).events[0]).toMatchObject({
+      minute: 105,
+      is_extra_time: true,
+    });
+  });
+
+  it('re-fetches shootout events when fixture decided_by is penalties but cache lacks shootout events', async () => {
+    fixturesRepository.findOne.mockResolvedValue(
+      makeFixture({ summary_fetched: true, decided_by: 'penalties' }),
+    );
+    eventsRepository.find.mockResolvedValue([
+      Object.assign(new MatchEventEntity(), {
+        fixture_id: 760415,
+        event_order: 0,
+        type: 'goal',
+        team_id: 481,
+        player_name: 'Julio Enciso',
+        minute: 42,
+        is_extra_time: false,
+      }),
+    ]);
+    statsRepository.find.mockResolvedValue([]);
+    httpService.get.mockReturnValue(
+      of({
+        data: {
+          shootout: [
+            {
+              id: '481',
+              team: 'Germany',
+              shots: [{ player: 'Joshua Kimmich', shotNumber: 1, didScore: true }],
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await service.getSummary(760415);
+
+    expect(httpService.get).toHaveBeenCalledTimes(1);
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    const types = (result as any).events.map((e: { type: string }) => e.type);
+    expect(types).toContain('shootout_goal');
   });
 });

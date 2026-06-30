@@ -43,6 +43,9 @@ describe('fixtures.mapper', () => {
       status: 'finished',
       home_score: 2,
       away_score: 1,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
       summary_fetched: false,
       updated_at: new Date(),
     };
@@ -55,6 +58,9 @@ describe('fixtures.mapper', () => {
       status: 'finished',
       home_score: 2,
       away_score: 1,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
     });
   });
 
@@ -73,6 +79,9 @@ describe('fixtures.mapper', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
       summary_fetched: false,
       updated_at: new Date(),
     };
@@ -90,6 +99,9 @@ describe('fixtures.mapper', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
       summary_fetched: false,
       updated_at: new Date(),
     };

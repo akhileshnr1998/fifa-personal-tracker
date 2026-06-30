@@ -1,4 +1,5 @@
 import { TeamWithFlag } from './TeamWithFlag';
+import { formatFixtureScore, formatFixtureScoreMeta } from './formatFixtureScore';
 import { formatKickoffTime } from './groupByDay';
 import { formatStageLabel } from './stageLabels';
 import styles from './fixtures.module.css';
@@ -19,14 +20,16 @@ function isFollowedMatch(fixture: Fixture, followedTeamIds: number[]): boolean {
 }
 
 function formatScore(fixture: Fixture): string | null {
-  if (fixture.status !== 'finished') return null;
-  if (fixture.home_score === null || fixture.away_score === null) return null;
-  return `${fixture.home_score} – ${fixture.away_score}`;
+  return formatFixtureScore(fixture);
 }
 
 export function MatchCard({ fixture, followedTeams = [], id, onSelect }: MatchCardProps) {
   const isFollowed = isFollowedMatch(fixture, followedTeams);
   const scoreLine = formatScore(fixture);
+  const scoreMeta = formatFixtureScoreMeta(fixture.decided_by);
+  const showMetaBadge =
+    scoreMeta !== null &&
+    !(fixture.decided_by === 'penalties' && scoreLine?.includes('('));
   const isClickable = onSelect !== undefined;
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -68,8 +71,15 @@ export function MatchCard({ fixture, followedTeams = [], id, onSelect }: MatchCa
       <div className={styles.teams}>
         <TeamWithFlag name={fixture.home_team.name} align="left" />
         {scoreLine ? (
-          <span className={styles.scoreBadge} aria-label={`Final score ${scoreLine}`}>
-            {scoreLine}
+          <span className={styles.scoreWrap}>
+            <span className={styles.scoreBadge} aria-label={`Final score ${scoreLine}`}>
+              {scoreLine}
+            </span>
+            {showMetaBadge && (
+              <span className={styles.scoreMetaBadge} aria-label={scoreMeta ?? undefined}>
+                {scoreMeta}
+              </span>
+            )}
           </span>
         ) : (
           <span className={styles.vsBadge} aria-label="versus">

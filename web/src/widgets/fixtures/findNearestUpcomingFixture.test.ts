@@ -17,6 +17,9 @@ function makeFixture(
     status: 'scheduled',
     home_score: null,
     away_score: null,
+    decided_by: 'regulation',
+    home_penalty_score: null,
+    away_penalty_score: null,
   };
 }
 

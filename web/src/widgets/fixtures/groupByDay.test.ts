@@ -14,6 +14,9 @@ const sampleFixtures: Fixture[] = [
     status: 'scheduled',
     home_score: null,
     away_score: null,
+    decided_by: 'regulation',
+    home_penalty_score: null,
+    away_penalty_score: null,
   },
   {
     id: 1,
@@ -26,6 +29,9 @@ const sampleFixtures: Fixture[] = [
     status: 'scheduled',
     home_score: null,
     away_score: null,
+    decided_by: 'regulation',
+    home_penalty_score: null,
+    away_penalty_score: null,
   },
 ];
 
@@ -56,6 +62,9 @@ describe('groupFixturesByDay', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
     };
     const lateUTC: Fixture = {
       id: 2,
@@ -69,6 +78,9 @@ describe('groupFixturesByDay', () => {
       status: 'scheduled',
       home_score: null,
       away_score: null,
+      decided_by: 'regulation',
+      home_penalty_score: null,
+      away_penalty_score: null,
     };
 
     const groups = groupFixturesByDay([earlyUTC, lateUTC]);

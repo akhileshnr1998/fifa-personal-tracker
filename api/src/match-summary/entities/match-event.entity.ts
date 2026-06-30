@@ -17,7 +17,9 @@ export type MatchEventType =
   | 'penalty_goal'
   | 'penalty_miss'
   | 'yellow_card'
-  | 'red_card';
+  | 'red_card'
+  | 'shootout_goal'
+  | 'shootout_miss';
 
 @Entity('match_events')
 @Unique('uq_match_events_fixture_order', ['fixture_id', 'event_order'])

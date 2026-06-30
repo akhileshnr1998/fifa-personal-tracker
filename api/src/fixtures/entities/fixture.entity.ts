@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { TeamEntity } from '../../teams/entities/team.entity';
 import { VenueEntity } from '../../venues/entities/venue.entity';
+import { DecidedBy } from '../decided-by';
 import { FixtureStatus } from '../fixture-status';
 
 @Entity('fixtures')
@@ -58,6 +59,15 @@ export class FixtureEntity {
 
   @Column({ type: 'int', nullable: true })
   away_score!: number | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'regulation' })
+  decided_by!: DecidedBy;
+
+  @Column({ type: 'int', nullable: true })
+  home_penalty_score!: number | null;
+
+  @Column({ type: 'int', nullable: true })
+  away_penalty_score!: number | null;
 
   @Column({ type: 'boolean', default: false })
   summary_fetched!: boolean;

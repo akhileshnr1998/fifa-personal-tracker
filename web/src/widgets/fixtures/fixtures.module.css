@@ -214,6 +214,22 @@
   flex-shrink: 0;
 }
 
+.scoreWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.scoreMetaBadge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wc-muted);
+}
+
 .vsBadge {
   display: flex;
   align-items: center;
@@ -540,6 +556,43 @@
 .eventMeta {
   font-size: 0.75rem;
   color: var(--wc-muted);
+}
+
+/* ─── Penalty shootout (two-column) ─────────────────────────────────────── */
+
+.shootoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.shootoutColumn,
+.shootoutColumnAway {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.shootoutColumnAway {
+  align-items: flex-end;
+}
+
+.shootoutCell,
+.shootoutCellAway {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 100%;
+}
+
+.shootoutCellAway {
+  flex-direction: row-reverse;
+}
+
+.shootoutCellAway .eventDetail {
+  text-align: right;
 }
 
 /* ─── Stat comparison bars ──────────────────────────────────────────────── */

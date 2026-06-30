@@ -4,12 +4,14 @@ export interface EspnStatusType {
   state?: string;
   completed?: boolean;
   description?: string;
+  detail?: string;
 }
 
 export interface EspnCompetitor {
   homeAway?: string;
   winner?: boolean;
   score?: string;
+  shootoutScore?: number;
   team?: {
     id?: string;
     displayName?: string;

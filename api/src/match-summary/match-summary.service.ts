@@ -21,6 +21,7 @@ import {
   EspnBoxscoreTeam,
   EspnKeyEvent,
   EspnScoringPlay,
+  EspnShootoutTeam,
   EspnSummaryResponse,
 } from './espn-summary.types';
 
@@ -109,6 +110,12 @@ export class MatchSummaryService {
     if (fixture.summary_fetched) {
       const cached = await this.loadFromDb(fixtureId);
       if (cached.events.length > 0) {
+        const hasShootoutEvents = cached.events.some(
+          (e) => e.type === 'shootout_goal' || e.type === 'shootout_miss',
+        );
+        if (fixture.decided_by === 'penalties' && !hasShootoutEvents) {
+          return this.backfillShootout(fixture, cached);
+        }
         return cached;
       }
       // Stats-only or empty stale cache — backfill from ESPN
@@ -123,6 +130,46 @@ export class MatchSummaryService {
     });
     this.inFlightSummaries.set(fixtureId, promise);
     return promise;
+  }
+
+  private async backfillShootout(
+    fixture: FixtureEntity,
+    cached: MatchSummaryResponseDto,
+  ): Promise<MatchSummaryResponseDto> {
+    let espnData: EspnSummaryResponse;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<EspnSummaryResponse>(this.espnSummaryBase, {
+          params: { event: fixture.id },
+        }),
+      );
+      espnData = response.data ?? {};
+    } catch (error) {
+      this.logger.error(
+        `ESPN shootout backfill failed for fixture ${fixture.id}`,
+        error,
+      );
+      return cached;
+    }
+
+    const shootoutEvents = this.mapShootoutEvents(
+      fixture.id,
+      espnData.shootout ?? [],
+      cached.events.length,
+    );
+
+    if (shootoutEvents.length === 0) {
+      return cached;
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      await manager.save(MatchEventEntity, shootoutEvents);
+    });
+
+    return {
+      ...cached,
+      events: [...cached.events, ...shootoutEvents.map(toEventDto)],
+    };
   }
 
   private async fetchStoreAndReturn(
@@ -198,10 +245,42 @@ export class MatchSummaryService {
     espnData: EspnSummaryResponse,
   ): MatchEventEntity[] {
     const scoringPlays = espnData.scoringPlays ?? [];
-    if (scoringPlays.length > 0) {
-      return this.mapScoringPlays(fixtureId, scoringPlays);
+    const regulationEvents =
+      scoringPlays.length > 0
+        ? this.mapScoringPlays(fixtureId, scoringPlays)
+        : this.mapKeyEvents(fixtureId, espnData.keyEvents ?? []);
+    const shootoutEvents = this.mapShootoutEvents(
+      fixtureId,
+      espnData.shootout ?? [],
+      regulationEvents.length,
+    );
+    return [...regulationEvents, ...shootoutEvents];
+  }
+
+  private mapShootoutEvents(
+    fixtureId: number,
+    teams: EspnShootoutTeam[],
+    startOrder: number,
+  ): MatchEventEntity[] {
+    const entities: MatchEventEntity[] = [];
+    let order = startOrder;
+
+    for (const teamBlock of teams) {
+      const teamId = teamBlock.id ? parseInt(teamBlock.id, 10) : null;
+      for (const shot of teamBlock.shots ?? []) {
+        const e = new MatchEventEntity();
+        e.fixture_id = fixtureId;
+        e.event_order = order++;
+        e.type = shot.didScore ? 'shootout_goal' : 'shootout_miss';
+        e.team_id = teamId;
+        e.player_name = shot.player ?? null;
+        e.assist_name = null;
+        e.minute = null;
+        e.is_extra_time = false;
+        entities.push(e);
+      }
     }
-    return this.mapKeyEvents(fixtureId, espnData.keyEvents ?? []);
+    return entities;
   }
 
   private mapKeyEvents(
@@ -235,8 +314,9 @@ export class MatchSummaryService {
       e.team_id = event.team?.id ? parseInt(event.team.id, 10) : null;
       e.player_name = parsed.player_name;
       e.assist_name = parsed.assist_name;
-      e.minute = parseMinute(event.clock?.displayValue);
-      e.is_extra_time = isExtraTime(event.clock?.displayValue);
+      const classified = classifyMinute(event.clock?.displayValue);
+      e.minute = classified.minute;
+      e.is_extra_time = classified.is_stoppage || classified.is_extra_period;
       entities.push(e);
     }
 
@@ -265,8 +345,9 @@ export class MatchSummaryService {
         mappedType === 'goal'
           ? (play.athletesInvolved?.[1]?.displayName ?? null)
           : null;
-      e.minute = parseMinute(play.clock?.displayValue);
-      e.is_extra_time = isExtraTime(play.clock?.displayValue);
+      const classified = classifyMinute(play.clock?.displayValue);
+      e.minute = classified.minute;
+      e.is_extra_time = classified.is_stoppage || classified.is_extra_period;
       entities.push(e);
     }
 
@@ -298,16 +379,19 @@ export class MatchSummaryService {
   }
 }
 
-function parseMinute(displayValue: string | undefined): number | null {
-  if (!displayValue) return null;
-  // ESPN formats: "23'", "45+2'", "90+4'"
+function classifyMinute(displayValue: string | undefined): {
+  minute: number | null;
+  is_stoppage: boolean;
+  is_extra_period: boolean;
+} {
+  if (!displayValue) {
+    return { minute: null, is_stoppage: false, is_extra_period: false };
+  }
+  const stoppage = displayValue.includes('+');
   const match = displayValue.match(/^(\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
-
-function isExtraTime(displayValue: string | undefined): boolean {
-  if (!displayValue) return false;
-  return displayValue.includes('+');
+  const minute = match ? parseInt(match[1], 10) : null;
+  const is_extra_period = minute != null && minute > 90 && !stoppage;
+  return { minute, is_stoppage: stoppage, is_extra_period };
 }
 
 function toEventDto(e: MatchEventEntity): MatchEventDto {

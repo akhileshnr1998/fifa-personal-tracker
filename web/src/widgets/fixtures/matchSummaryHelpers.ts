@@ -8,6 +8,10 @@ export function eventIcon(type: MatchEventType): string {
       return '⚽';
     case 'penalty_miss':
       return '❌';
+    case 'shootout_goal':
+      return '✅';
+    case 'shootout_miss':
+      return '❌';
     case 'yellow_card':
       return '🟨';
     case 'red_card':
@@ -25,6 +29,10 @@ export function eventLabel(type: MatchEventType): string {
       return 'Penalty';
     case 'penalty_miss':
       return 'Penalty Miss';
+    case 'shootout_goal':
+      return 'Scored';
+    case 'shootout_miss':
+      return 'Missed';
     case 'yellow_card':
       return 'Yellow Card';
     case 'red_card':
@@ -34,7 +42,13 @@ export function eventLabel(type: MatchEventType): string {
 
 export function formatMinute(minute: number | null, isExtraTime: boolean): string {
   if (minute === null) return "?'";
-  return isExtraTime ? `${minute}+'` : `${minute}'`;
+  if (isExtraTime && minute > 90) return `${minute}'`;
+  if (isExtraTime) return `${minute}+'`;
+  return `${minute}'`;
+}
+
+export function isShootoutEvent(type: MatchEventType): boolean {
+  return type === 'shootout_goal' || type === 'shootout_miss';
 }
 
 /**

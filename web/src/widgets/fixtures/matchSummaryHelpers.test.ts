@@ -3,6 +3,7 @@ import {
   eventIcon,
   eventLabel,
   formatMinute,
+  isShootoutEvent,
   statBarWidths,
 } from './matchSummaryHelpers';
 
@@ -25,6 +26,12 @@ describe('eventIcon', () => {
   it('returns 🟥 for red_card', () => {
     expect(eventIcon('red_card')).toBe('🟥');
   });
+  it('returns ✅ for shootout_goal', () => {
+    expect(eventIcon('shootout_goal')).toBe('✅');
+  });
+  it('returns ❌ for shootout_miss', () => {
+    expect(eventIcon('shootout_miss')).toBe('❌');
+  });
 });
 
 describe('eventLabel', () => {
@@ -46,6 +53,12 @@ describe('eventLabel', () => {
   it('returns "Red Card" for red_card', () => {
     expect(eventLabel('red_card')).toBe('Red Card');
   });
+  it('returns "Scored" for shootout_goal', () => {
+    expect(eventLabel('shootout_goal')).toBe('Scored');
+  });
+  it('returns "Missed" for shootout_miss', () => {
+    expect(eventLabel('shootout_miss')).toBe('Missed');
+  });
 });
 
 describe('formatMinute', () => {
@@ -55,11 +68,24 @@ describe('formatMinute', () => {
   it("returns \"45+'\" for minute 45 in extra time", () => {
     expect(formatMinute(45, true)).toBe("45+'");
   });
+  it("returns \"105'\" for minute 105 in extra period", () => {
+    expect(formatMinute(105, true)).toBe("105'");
+  });
   it("returns \"?'\" when minute is null", () => {
     expect(formatMinute(null, false)).toBe("?'");
   });
   it("returns \"?'\" when minute is null even in extra time", () => {
     expect(formatMinute(null, true)).toBe("?'");
+  });
+});
+
+describe('isShootoutEvent', () => {
+  it('returns true for shootout types', () => {
+    expect(isShootoutEvent('shootout_goal')).toBe(true);
+    expect(isShootoutEvent('shootout_miss')).toBe(true);
+  });
+  it('returns false for regulation types', () => {
+    expect(isShootoutEvent('goal')).toBe(false);
   });
 });
 

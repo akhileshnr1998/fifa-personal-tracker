@@ -1,5 +1,6 @@
 import { resolveEspnTeamId } from '../teams/resolve-team-id';
 import { resolveVenueId } from '../venues/resolve-venue-id';
+import { mapDecidedBy } from './decided-by';
 import { FixtureEntity } from './entities/fixture.entity';
 import { ESPN_STAGE_SLUG_TO_ID, FixtureStatus } from './fixture-status';
 import { EspnCompetition, EspnEvent, EspnVenueSource } from './espn.types';
@@ -94,6 +95,22 @@ export function mapEspnEvent(event: EspnEvent, matchNumber: number): FixtureEnti
   entity.status = status;
   entity.home_score = scores.home;
   entity.away_score = scores.away;
+
+  const statusName = competition?.status?.type?.name;
+  const statusDetail = competition?.status?.type?.detail;
+  entity.decided_by = mapDecidedBy(statusName, statusDetail);
+
+  const homeShootout = homeCompetitor?.shootoutScore;
+  const awayShootout = awayCompetitor?.shootoutScore;
+  entity.home_penalty_score =
+    entity.decided_by === 'penalties' && homeShootout != null
+      ? homeShootout
+      : null;
+  entity.away_penalty_score =
+    entity.decided_by === 'penalties' && awayShootout != null
+      ? awayShootout
+      : null;
+
   return entity;
 }
 

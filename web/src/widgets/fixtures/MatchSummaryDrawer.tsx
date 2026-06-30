@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { groupMatchEventsForDisplay, splitShootoutByTeam } from './matchEventTimeline';
 import {
   eventIcon,
   eventLabel,
   formatMinute,
+  isShootoutEvent,
   statBarWidths,
 } from './matchSummaryHelpers';
+import { formatFixtureScore } from './formatFixtureScore';
 import { TeamWithFlag } from './TeamWithFlag';
 import styles from './fixtures.module.css';
-import type { Fixture, MatchStat, MatchSummaryResult } from './types';
+import type { Fixture, MatchEvent, MatchStat, MatchSummaryResult } from './types';
 import type { SummaryStatus } from './useMatchSummary';
 
 interface MatchSummaryDrawerProps {
@@ -33,6 +36,112 @@ const STAT_ROWS: StatRowDef[] = [
   { key: 'offsides', label: 'Offsides' },
   { key: 'saves', label: 'Saves' },
 ];
+
+function EventRow({
+  event,
+  awayTeamId,
+  showMinute,
+}: {
+  event: MatchEvent;
+  awayTeamId: number;
+  showMinute: boolean;
+}) {
+  const isAway = event.team_id === awayTeamId;
+  const metaParts: string[] = [];
+  if (isShootoutEvent(event.type)) {
+    metaParts.push(eventLabel(event.type));
+  } else {
+    if (event.type !== 'goal' && event.type !== 'penalty_goal') {
+      metaParts.push(eventLabel(event.type));
+    }
+    if (event.assist_name) {
+      metaParts.push(`assist: ${event.assist_name}`);
+    }
+    if (event.type === 'own_goal') {
+      metaParts.push('OG');
+    }
+  }
+
+  return (
+    <div
+      className={`${styles.eventRow} ${isAway ? styles.eventRowAway : ''}`}
+    >
+      {showMinute && (
+        <span className={styles.eventMinute}>
+          {formatMinute(event.minute, event.is_extra_time)}
+        </span>
+      )}
+      <span className={styles.eventIcon} aria-hidden="true">
+        {eventIcon(event.type)}
+      </span>
+      <div className={styles.eventDetail}>
+        <div className={styles.eventPlayer}>{event.player_name ?? '—'}</div>
+        {metaParts.length > 0 && (
+          <div className={styles.eventMeta}>{metaParts.join(' · ')}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ShootoutCell({
+  event,
+  align,
+}: {
+  event: MatchEvent;
+  align: 'left' | 'right';
+}) {
+  return (
+    <div
+      className={
+        align === 'right' ? styles.shootoutCellAway : styles.shootoutCell
+      }
+    >
+      <span className={styles.eventIcon} aria-hidden="true">
+        {eventIcon(event.type)}
+      </span>
+      <div className={styles.eventDetail}>
+        <div className={styles.eventPlayer}>{event.player_name ?? '—'}</div>
+        <div className={styles.eventMeta}>{eventLabel(event.type)}</div>
+      </div>
+    </div>
+  );
+}
+
+function ShootoutGrid({
+  events,
+  homeTeamId,
+  awayTeamId,
+}: {
+  events: MatchEvent[];
+  homeTeamId: number;
+  awayTeamId: number;
+}) {
+  const { home, away } = splitShootoutByTeam(events, homeTeamId, awayTeamId);
+
+  return (
+    <div className={styles.shootoutGrid}>
+      <div className={styles.shootoutColumn}>
+        {home.map((event, i) => (
+          <ShootoutCell
+            key={`home-${event.type}-${i}`}
+            event={event}
+            align="left"
+          />
+        ))}
+      </div>
+      <div className={styles.shootoutColumnAway}>
+        {away.map((event, i) => (
+          <ShootoutCell
+            key={`away-${event.type}-${i}`}
+            event={event}
+            align="right"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function MatchSummaryDrawer({
   fixture,
@@ -60,10 +169,7 @@ export function MatchSummaryDrawer({
     };
   }, [beginClose]);
 
-  const score =
-    fixture.home_score !== null && fixture.away_score !== null
-      ? `${fixture.home_score} – ${fixture.away_score}`
-      : null;
+  const score = formatFixtureScore(fixture);
 
   const homeStat =
     summary?.available
@@ -75,7 +181,14 @@ export function MatchSummaryDrawer({
       : null;
 
   const hasStats = homeStat !== null || awayStat !== null;
-  const hasEvents = summary?.available && summary.events.length > 0;
+  const eventSections = useMemo(
+    () =>
+      summary?.available
+        ? groupMatchEventsForDisplay(summary.events, fixture.decided_by)
+        : [],
+    [summary, fixture.decided_by],
+  );
+  const hasEvents = eventSections.length > 0;
 
   return (
     <>
@@ -140,50 +253,33 @@ export function MatchSummaryDrawer({
           </div>
         )}
 
-        {/* Events timeline */}
+        {/* Events timeline — newest period first, latest event first within each */}
         {status === 'ready' && hasEvents && summary?.available && (
-          <div className={styles.drawerSection}>
-            <p className={styles.drawerSectionTitle}>Match Events</p>
-            <div className={styles.eventList}>
-              {summary.events.map((event, i) => {
-                const isAway = event.team_id === fixture.away_team.id;
-                const metaParts: string[] = [];
-                if (event.type !== 'goal' && event.type !== 'penalty_goal') {
-                  metaParts.push(eventLabel(event.type));
-                }
-                if (event.assist_name) {
-                  metaParts.push(`assist: ${event.assist_name}`);
-                }
-                if (event.type === 'own_goal') {
-                  metaParts.push('OG');
-                }
-
-                return (
-                  <div
-                    key={`${event.type}-${event.minute ?? 'null'}-${i}`}
-                    className={`${styles.eventRow} ${isAway ? styles.eventRowAway : ''}`}
-                  >
-                    <span className={styles.eventMinute}>
-                      {formatMinute(event.minute, event.is_extra_time)}
-                    </span>
-                    <span className={styles.eventIcon} aria-hidden="true">
-                      {eventIcon(event.type)}
-                    </span>
-                    <div className={styles.eventDetail}>
-                      <div className={styles.eventPlayer}>
-                        {event.player_name ?? '—'}
-                      </div>
-                      {metaParts.length > 0 && (
-                        <div className={styles.eventMeta}>
-                          {metaParts.join(' · ')}
-                        </div>
-                      )}
-                    </div>
+          <>
+            {eventSections.map((section) => (
+              <div key={section.id} className={styles.drawerSection}>
+                <p className={styles.drawerSectionTitle}>{section.title}</p>
+                {section.id === 'shootout' ? (
+                  <ShootoutGrid
+                    events={section.events}
+                    homeTeamId={fixture.home_team.id}
+                    awayTeamId={fixture.away_team.id}
+                  />
+                ) : (
+                  <div className={styles.eventList}>
+                    {section.events.map((event, i) => (
+                      <EventRow
+                        key={`${section.id}-${event.type}-${event.minute ?? 'null'}-${i}`}
+                        event={event}
+                        awayTeamId={fixture.away_team.id}
+                        showMinute
+                      />
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                )}
+              </div>
+            ))}
+          </>
         )}
 
         {/* Stats comparison */}

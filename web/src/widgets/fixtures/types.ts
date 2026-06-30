@@ -1,5 +1,7 @@
 export type FixtureStatus = 'scheduled' | 'finished' | 'postponed';
 
+export type DecidedBy = 'regulation' | 'extra_time' | 'penalties';
+
 export interface TeamSummary {
   id: number;
   name: string;
@@ -21,6 +23,9 @@ export interface Fixture {
   status: FixtureStatus;
   home_score: number | null;
   away_score: number | null;
+  decided_by: DecidedBy;
+  home_penalty_score: number | null;
+  away_penalty_score: number | null;
 }
 
 export type MatchEventType =
@@ -29,7 +34,9 @@ export type MatchEventType =
   | 'penalty_goal'
   | 'penalty_miss'
   | 'yellow_card'
-  | 'red_card';
+  | 'red_card'
+  | 'shootout_goal'
+  | 'shootout_miss';
 
 export interface MatchEvent {
   type: MatchEventType;

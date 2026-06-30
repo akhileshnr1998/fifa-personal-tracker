@@ -106,6 +106,19 @@ ESPN uses descriptive labels instead of bracket codes:
 
 Filtered by `isPlaceholderTeam()` in `api/src/teams/is-placeholder-team.ts`.
 
+### 3.4 Knockout score mapping (extra time & penalties)
+
+| ESPN field | Example | App field |
+| :--- | :--- | :--- |
+| `competitors[].score` | `"1"` / `"1"` | `home_score` / `away_score` (regulation + ET, excludes shootout) |
+| `competitors[].shootoutScore` | `3` / `4` | `home_penalty_score` / `away_penalty_score` (only when `decided_by === 'penalties'`) |
+| `status.type.name` | `STATUS_FINAL_PEN` | `decided_by: 'penalties'` |
+| `status.type.name` | `STATUS_AFTER_EXTRA_TIME` | `decided_by: 'extra_time'` |
+| `status.type.name` | `STATUS_FULL_TIME` | `decided_by: 'regulation'` |
+| `status.type.detail` | `FT-Pens`, `AET` | Informational — mapped via `mapDecidedBy()` in `api/src/fixtures/decided-by.ts` |
+
+Penalty shootout totals are populated during the existing scoreboard sync (`FixturesSyncService`). No additional ESPN calls.
+
 ---
 
 ## 4. Our API Response
@@ -121,7 +134,23 @@ Filtered by `isPlaceholderTeam()` in `api/src/teams/is-placeholder-team.ts`.
   "venue": { "id": 1672, "name": "Estadio Banorte" },
   "status": "finished",
   "home_score": 2,
-  "away_score": 1
+  "away_score": 1,
+  "decided_by": "regulation",
+  "home_penalty_score": null,
+  "away_penalty_score": null
+}
+```
+
+Penalty shootout example:
+
+```json
+{
+  "status": "finished",
+  "home_score": 1,
+  "away_score": 1,
+  "decided_by": "penalties",
+  "home_penalty_score": 3,
+  "away_penalty_score": 4
 }
 ```
 
@@ -249,7 +278,17 @@ response.scoringPlays[j]                     → one match event (match_events)
   .type.text                                 → match_events.type  (see type mapping)
   .athletesInvolved[0].displayName           → match_events.player_name
   .athletesInvolved[1].displayName           → match_events.assist_name  (goals only)
+
+response.shootout[i].shots[j]                → shootout event (appended after regulation events)
+  .team.id (via parent block)                 → match_events.team_id
+  .player                                     → match_events.player_name
+  .didScore                                   → shootout_goal | shootout_miss
+  (minute always null)
 ```
+
+Extra-time minute classification: clocks like `"105'"` set `is_extra_time: true`; stoppage time like `"45+2'"` also sets `is_extra_time: true`.
+
+**Backfill:** If `fixture.decided_by === 'penalties'` but cached events lack shootout types, the service re-fetches ESPN summary and appends shootout rows only.
 
 ### 6.2 Event type mapping
 
@@ -262,6 +301,8 @@ response.scoringPlays[j]                     → one match event (match_events)
 | `Yellow Card` | `yellow_card` |
 | `Red Card` | `red_card` |
 | `Yellow-Red Card` | `red_card` |
+| `shootout[].shots[].didScore: true` | `shootout_goal` |
+| `shootout[].shots[].didScore: false` | `shootout_miss` |
 
 ### 6.3 Stat name mapping
 

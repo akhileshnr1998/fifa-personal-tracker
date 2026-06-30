@@ -31,6 +31,9 @@ export function toFixtureResponseDto(fixture: FixtureEntity): FixtureResponseDto
     status: fixture.status,
     home_score: fixture.home_score,
     away_score: fixture.away_score,
+    decided_by: fixture.decided_by,
+    home_penalty_score: fixture.home_penalty_score,
+    away_penalty_score: fixture.away_penalty_score,
   };
 }
 
