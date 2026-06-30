@@ -15,5 +15,6 @@ import { FixturesSyncService } from './fixtures-sync.service';
   ],
   controllers: [FixturesController],
   providers: [FixturesService, FixturesSyncService],
+  exports: [FixturesService],
 })
 export class FixturesModule {}

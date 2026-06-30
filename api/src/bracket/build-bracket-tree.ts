@@ -1,9 +1,13 @@
-import { formatStageLabel } from '../fixtures/stageLabels';
-import type { Fixture } from '../fixtures/types';
-import { BRACKET_SLOTS } from './bracketTopology';
-import type { BracketNode, BracketRound, BracketTree } from './types';
+import { FixtureResponseDto } from '../fixtures/dto/fixture-response.dto';
+import { formatStageLabel } from './stage-labels';
+import { BRACKET_SLOTS } from './bracket-topology';
+import {
+  BracketNodeDto,
+  BracketResponseDto,
+  BracketRoundDto,
+} from './dto/bracket-response.dto';
 
-export function resolveFixtureWinner(fixture: Fixture): number | null {
+export function resolveFixtureWinner(fixture: FixtureResponseDto): number | null {
   if (fixture.status !== 'finished') return null;
   if (fixture.home_score === null || fixture.away_score === null) return null;
 
@@ -28,7 +32,7 @@ export function resolveFixtureWinner(fixture: Fixture): number | null {
   return null;
 }
 
-function sortNodesForColumn(nodes: BracketNode[]): BracketNode[] {
+function sortNodesForColumn(nodes: BracketNodeDto[]): BracketNodeDto[] {
   const halfOrder = { upper: 0, lower: 1, 'third-place': 2 } as const;
   return [...nodes].sort((left, right) => {
     const halfDiff =
@@ -38,8 +42,10 @@ function sortNodesForColumn(nodes: BracketNode[]): BracketNode[] {
   });
 }
 
-function buildRoundColumns(nodes: Map<number, BracketNode>): BracketRound[] {
-  const columns: BracketRound[] = [];
+function buildRoundColumns(
+  nodes: Map<number, BracketNodeDto>,
+): BracketRoundDto[] {
+  const columns: BracketRoundDto[] = [];
 
   for (const roundIndex of [0, 1, 2, 3]) {
     const roundNodes = sortNodesForColumn(
@@ -75,8 +81,18 @@ function buildRoundColumns(nodes: Map<number, BracketNode>): BracketRound[] {
   return columns;
 }
 
-export function buildBracketTree(fixtures: Fixture[]): BracketTree {
-  const fixtureByMatchNumber = new Map<number, Fixture>();
+export function hasKnockoutFixtures(fixtures: FixtureResponseDto[]): boolean {
+  return fixtures.some(
+    (fixture) =>
+      fixture.stage_id >= 2 ||
+      (fixture.match_number != null && fixture.match_number >= 73),
+  );
+}
+
+export function buildBracketTree(
+  fixtures: FixtureResponseDto[],
+): BracketResponseDto {
+  const fixtureByMatchNumber = new Map<number, FixtureResponseDto>();
   for (const fixture of fixtures) {
     if (
       fixture.match_number != null &&
@@ -87,7 +103,7 @@ export function buildBracketTree(fixtures: Fixture[]): BracketTree {
     }
   }
 
-  const nodes = new Map<number, BracketNode>();
+  const nodes = new Map<number, BracketNodeDto>();
   for (const slot of BRACKET_SLOTS) {
     const fixture = fixtureByMatchNumber.get(slot.matchNumber) ?? null;
     nodes.set(slot.matchNumber, {
@@ -97,16 +113,15 @@ export function buildBracketTree(fixtures: Fixture[]): BracketTree {
     });
   }
 
-  return {
-    rounds: buildRoundColumns(nodes),
-    nodes,
-  };
-}
+  const rounds = buildRoundColumns(nodes);
+  const nodesRecord: Record<string, BracketNodeDto> = {};
+  for (const [matchNumber, node] of nodes.entries()) {
+    nodesRecord[String(matchNumber)] = node;
+  }
 
-export function hasKnockoutFixtures(fixtures: Fixture[]): boolean {
-  return fixtures.some(
-    (fixture) =>
-      fixture.stage_id >= 2 ||
-      (fixture.match_number != null && fixture.match_number >= 73),
-  );
+  return {
+    knockoutStarted: hasKnockoutFixtures(fixtures),
+    rounds,
+    nodes: nodesRecord,
+  };
 }

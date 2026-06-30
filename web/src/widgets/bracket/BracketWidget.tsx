@@ -36,7 +36,7 @@ export default function BracketWidget() {
     return <BracketSkeleton />;
   }
 
-  if (status === 'empty' || status === 'error' || !knockoutStarted) {
+  if (status === 'empty' || status === 'error' || !knockoutStarted || !tree) {
     return (
       <section className={styles.widget}>
         <div className={shared.emptyState}>

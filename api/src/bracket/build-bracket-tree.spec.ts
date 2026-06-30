@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { buildBracketTree, resolveFixtureWinner } from './buildBracketTree';
-import type { Fixture } from '../fixtures/types';
+import { buildBracketTree, resolveFixtureWinner } from './build-bracket-tree';
+import { FixtureResponseDto } from '../fixtures/dto/fixture-response.dto';
 
-function makeFixture(overrides: Partial<Fixture> & Pick<Fixture, 'id'>): Fixture {
+function makeFixture(
+  overrides: Partial<FixtureResponseDto> & Pick<FixtureResponseDto, 'id'>,
+): FixtureResponseDto {
   return {
     match_number: overrides.id,
     match_date_time: '2026-06-29T19:00:00.000Z',
@@ -51,7 +52,7 @@ describe('buildBracketTree', () => {
 
   it('places finished R32 fixture in round 0 and resolves winner', () => {
     const tree = buildBracketTree([r32Fixture]);
-    const node = tree.nodes.get(73);
+    const node = tree.nodes['73'];
     expect(node?.fixture?.home_team.name).toBe('Germany');
     expect(node?.winnerTeamId).toBe(490);
     expect(tree.rounds[0]?.nodes.some((entry) => entry.slot.matchNumber === 73)).toBe(
@@ -61,7 +62,16 @@ describe('buildBracketTree', () => {
 
   it('creates placeholder nodes for missing knockout slots', () => {
     const tree = buildBracketTree([r32Fixture]);
-    expect(tree.nodes.get(104)?.fixture).toBeNull();
+    expect(tree.nodes['104']?.fixture).toBeNull();
     expect(tree.rounds).toHaveLength(6);
+  });
+
+  it('sets knockoutStarted when knockout fixtures exist', () => {
+    expect(buildBracketTree([r32Fixture]).knockoutStarted).toBe(true);
+    expect(
+      buildBracketTree([
+        makeFixture({ id: 1, match_number: 1, stage_id: 1 }),
+      ]).knockoutStarted,
+    ).toBe(false);
   });
 });

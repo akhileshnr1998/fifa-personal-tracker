@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 import { getTypeOrmOptions } from './database/typeorm.options';
+import { BracketModule } from './bracket/bracket.module';
 import { FixturesModule } from './fixtures/fixtures.module';
 import { HealthModule } from './health/health.module';
 import { MatchSummaryModule } from './match-summary/match-summary.module';
@@ -45,6 +46,7 @@ import { UserModule } from './users/user.module';
         getTypeOrmOptions(configService.get<string>('DATABASE_URL')),
     }),
     FixturesModule,
+    BracketModule,
     HealthModule,
     MatchSummaryModule,
     TeamsModule,
