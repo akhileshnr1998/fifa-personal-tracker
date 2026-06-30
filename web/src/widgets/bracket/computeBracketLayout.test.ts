@@ -5,7 +5,7 @@ describe('computeBracketLayout', () => {
   it('centers R16 nodes between their R32 parents', () => {
     const layout = computeBracketLayout();
     const parentA = layout.nodes.get(73)!;
-    const parentB = layout.nodes.get(74)!;
+    const parentB = layout.nodes.get(76)!;
     const child = layout.nodes.get(89)!;
 
     const parentCenter = (parentA.top + parentB.top + parentA.height) / 2;
@@ -26,10 +26,10 @@ describe('computeBracketLayout', () => {
     expect(finalCenter).toBeCloseTo(sfMid, 0);
   });
 
-  it('keeps a clear vertical gap between adjacent R32 matches', () => {
+  it('keeps a clear vertical gap between adjacent upper-half R32 matches', () => {
     const layout = computeBracketLayout();
     const first = layout.nodes.get(73)!;
-    const second = layout.nodes.get(74)!;
+    const second = layout.nodes.get(76)!;
     const gap = second.top - (first.top + first.height);
 
     expect(gap).toBeGreaterThanOrEqual(BRACKET_LAYOUT.minNodeGap);
@@ -37,8 +37,8 @@ describe('computeBracketLayout', () => {
 
   it('separates upper and lower bracket halves', () => {
     const layout = computeBracketLayout();
-    const lastUpper = layout.nodes.get(80)!;
-    const firstLower = layout.nodes.get(81)!;
+    const lastUpper = layout.nodes.get(82)!;
+    const firstLower = layout.nodes.get(74)!;
     const gap = firstLower.top - (lastUpper.top + lastUpper.height);
 
     expect(gap).toBeGreaterThanOrEqual(BRACKET_LAYOUT.halfGap - 4);
