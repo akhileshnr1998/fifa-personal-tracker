@@ -7,5 +7,6 @@ import { BracketService } from './bracket.service';
   imports: [FixturesModule],
   controllers: [BracketController],
   providers: [BracketService],
+  exports: [BracketService],
 })
 export class BracketModule {}

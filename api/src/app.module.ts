@@ -7,6 +7,7 @@ import * as Joi from 'joi';
 import { getTypeOrmOptions } from './database/typeorm.options';
 import { BracketModule } from './bracket/bracket.module';
 import { FixturesModule } from './fixtures/fixtures.module';
+import { HubModule } from './hub/hub.module';
 import { HealthModule } from './health/health.module';
 import { MatchSummaryModule } from './match-summary/match-summary.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -46,6 +47,7 @@ import { UserModule } from './users/user.module';
         getTypeOrmOptions(configService.get<string>('DATABASE_URL')),
     }),
     FixturesModule,
+    HubModule,
     BracketModule,
     HealthModule,
     MatchSummaryModule,

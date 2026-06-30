@@ -14,5 +14,6 @@ import { MatchSummaryService } from './match-summary.service';
   ],
   controllers: [MatchSummaryController],
   providers: [MatchSummaryService],
+  exports: [MatchSummaryService],
 })
 export class MatchSummaryModule {}

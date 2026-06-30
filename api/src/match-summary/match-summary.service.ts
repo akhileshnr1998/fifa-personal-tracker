@@ -72,6 +72,8 @@ export class MatchSummaryService {
     Promise<MatchSummaryResponseDto | MatchSummaryUnavailableDto>
   >();
 
+  private backfillPromise: Promise<void> | null = null;
+
   private readonly espnSummaryBase: string;
 
   constructor(
@@ -130,6 +132,75 @@ export class MatchSummaryService {
     });
     this.inFlightSummaries.set(fixtureId, promise);
     return promise;
+  }
+
+  /**
+   * Hydrates match_events for finished fixtures that have not had summaries
+   * fetched yet. Hub top scorers depend on this data; summaries are otherwise
+   * lazy-loaded only when a user opens a match drawer.
+   */
+  async backfillFinishedSummaries(): Promise<void> {
+    if (!this.backfillPromise) {
+      this.backfillPromise = this.runBackfillFinishedSummaries().finally(() => {
+        this.backfillPromise = null;
+      });
+    }
+    return this.backfillPromise;
+  }
+
+  private async runBackfillFinishedSummaries(): Promise<void> {
+    const pending = await this.fixturesRepository
+      .createQueryBuilder('fixture')
+      .select('fixture.id', 'id')
+      .where('fixture.status = :status', { status: 'finished' })
+      .andWhere(
+        `(
+          fixture.summary_fetched = false
+          OR (
+            (fixture.home_score > 0 OR fixture.away_score > 0)
+            AND NOT EXISTS (
+              SELECT 1 FROM match_events event
+              WHERE event.fixture_id = fixture.id
+                AND event.type IN ('goal', 'penalty_goal')
+            )
+          )
+        )`,
+      )
+      .orderBy('fixture.match_date_time', 'ASC')
+      .getRawMany<{ id: number }>();
+
+    if (pending.length === 0) {
+      return;
+    }
+
+    const concurrency = 5;
+    for (let index = 0; index < pending.length; index += concurrency) {
+      const batch = pending.slice(index, index + concurrency);
+      await Promise.all(
+        batch.map(async (fixture) => {
+          try {
+            const existing = await this.fixturesRepository.findOne({
+              where: { id: fixture.id },
+              select: ['id', 'summary_fetched'],
+            });
+            if (existing?.summary_fetched) {
+              await this.dataSource.transaction(async (manager) => {
+                await manager.delete(MatchEventEntity, { fixture_id: fixture.id });
+                await manager.update(FixtureEntity, fixture.id, {
+                  summary_fetched: false,
+                });
+              });
+            }
+            await this.getSummary(fixture.id);
+          } catch (error) {
+            this.logger.warn(
+              `Summary backfill skipped for fixture ${fixture.id}`,
+              error,
+            );
+          }
+        }),
+      );
+    }
   }
 
   private async backfillShootout(

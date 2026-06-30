@@ -21,7 +21,7 @@ This document serves as the complete technical architecture and execution roadma
 | Phase   | Scope                             | Status                               |
 | ------- | --------------------------------- | ------------------------------------ |
 | **1**   | Day-wise Fixtures (MVP)           | `[x]` Code complete — deploy pending |
-| **2**   | Hub Widget                        | `[ ]` Not started                    |
+| **2**   | Hub Widget                        | `[x]` Code complete — live standings/bracket previews |
 | **3**   | Livescore Widget                  | `[ ]` Not started                    |
 | **4**   | Bracket Widget                    | `[ ]` Not started                    |
 | **5**   | Teams Widget                      | `[ ]` Not started                    |
@@ -117,14 +117,16 @@ This document serves as the complete technical architecture and execution roadma
 
 ### Phase 2 — Hub Widget
 
-- [ ] `GET /api/hub` aggregated endpoint
-- [ ] `src/widgets/hub/` — dashboard composer
-- [ ] Compact Fixtures preview embedded
-- [ ] Compact Standings preview embedded (stub OK until Phase 6)
-- [ ] Compact Bracket preview embedded (stub OK until Phase 4)
-- [ ] Top scorers section (stub or live)
-- [ ] Teams quick-links section (stub OK until Phase 5)
-- [ ] Hub tab enabled in widget registry
+> **Implementation plan:** [`docs/phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md) — gap analysis, API contract, sprints, and test plan.
+
+- [x] `GET /api/hub` aggregated endpoint
+- [x] `src/widgets/hub/` — dashboard composer
+- [x] Compact Fixtures preview embedded
+- [x] Compact Standings preview embedded (live — Phase 6 shipped first)
+- [x] Compact Bracket preview embedded (live — Phase 4 shipped first)
+- [x] Top scorers section (live via `match_events` aggregation)
+- [x] Teams quick-links section (live names grid; full Teams widget Phase 5)
+- [x] Hub tab enabled in widget registry
 - [ ] **Phase 2 signed off**
 
 ---
@@ -486,7 +488,7 @@ Widgets to add after Phase 1. Each is a standalone module the Hub can embed or t
 | **Live Standings** | Live group tables as matches play; knockout slots update as teams advance                          | Standings and bracket progression without a separate page |
 
 
-The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions of other widgets and does not duplicate data logic.
+The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions of other widgets and does not duplicate data logic. See [`phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md) for the implementation plan.
 
 ### E. Primary User Journey
 
@@ -681,7 +683,7 @@ All API inputs/outputs adopt standard REST communication structures using strict
 
 | Widget             | Planned endpoints                                                          | Data source                                                              |
 | ------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Hub**            | `GET /api/hub` — aggregated snapshot for dashboard                         | Composes responses from fixtures, standings, bracket, scorers, teams     |
+| **Hub**            | `GET /api/hub` — aggregated snapshot for dashboard                         | Composes responses from fixtures, standings, bracket, scorers, teams — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
 | **Livescore**      | *Deferred*                                                                 | Post-match scores on `GET /api/fixtures` via ESPN refresh                |
 | **Bracket**        | `GET /api/bracket`                                                         | ESPN schedule or local `fixtures` derivation                             |
 | **Teams**          | `GET /api/teams`, `GET /api/teams/:id/squad`                               | ESPN teams/roster endpoints                                              |
@@ -963,6 +965,8 @@ Essential for PWA compliance, specifically to enable notification support on mod
 ### Phase 2 — Hub Widget
 
 Build `widgets/hub/` as a composer that embeds compact Fixtures + Standings + Bracket + Scorers + Teams previews. Add `GET /api/hub` aggregated endpoint. Enable Hub tab in widget registry.
+
+**Detailed plan:** [`docs/phase-2-hub-widget-plan.md`](./phase-2-hub-widget-plan.md)
 
 ### Phase 3 — Livescore Widget
 

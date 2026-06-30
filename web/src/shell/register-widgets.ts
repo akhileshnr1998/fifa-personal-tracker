@@ -3,6 +3,14 @@ import { registerWidget } from './registry';
 const CURRENT_PHASE = Number(import.meta.env.VITE_APP_PHASE ?? 7);
 
 registerWidget({
+  id: 'hub',
+  label: 'Hub',
+  phase: 2,
+  navOrder: 0,
+  lazy: () => import('../widgets/hub/HubWidget'),
+});
+
+registerWidget({
   id: 'fixtures',
   label: 'Fixtures',
   phase: 1,

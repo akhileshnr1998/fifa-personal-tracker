@@ -371,7 +371,7 @@ Unfinished match response:
 | Widget | ESPN endpoint | Notes |
 | :--- | :--- | :--- |
 | Teams (Phase 5) | `/sports/soccer/fifa.world/teams` | Rosters via `/teams/{id}/roster` |
-| Hub scorers (Phase 2) | Derived from `match_events` table (Phase 8) | Goal scorers available once Phase 8 ships |
+| Hub scorers (Phase 2) | Derived from `match_events` table (Phase 8) | Goal scorers available once Phase 8 ships — see [phase-2-hub-widget-plan.md](./phase-2-hub-widget-plan.md) |
 
 All future widgets should follow the same on-demand refresh pattern.
 

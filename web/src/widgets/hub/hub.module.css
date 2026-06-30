@@ -1,0 +1,230 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap);
+}
+
+.heroStrip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(135deg, var(--wc-purple-soft) 0%, var(--wc-magenta-soft) 100%);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--radius-banner);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--wc-purple);
+}
+
+.heroIcon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.staleNotice {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-banner);
+  background: var(--wc-purple-soft);
+  color: var(--wc-purple);
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--wc-navy);
+  letter-spacing: -0.02em;
+}
+
+.viewAllLink {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--wc-purple);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewAllLink:hover {
+  text-decoration: underline;
+}
+
+.subsectionTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--wc-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.matchList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionEmpty {
+  margin: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--wc-border);
+  background: var(--wc-white);
+  color: var(--wc-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.bracketPreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.scorersList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scorerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--wc-white);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--radius-card);
+}
+
+.scorerRank {
+  width: 1.5rem;
+  font-weight: 800;
+  color: var(--wc-purple);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.scorerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.scorerName {
+  display: block;
+  font-weight: 700;
+  color: var(--wc-navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scorerTeam {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--wc-muted);
+}
+
+.scorerGoals {
+  font-weight: 800;
+  color: var(--wc-navy);
+  flex-shrink: 0;
+}
+
+.teamsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.teamChip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: var(--space-2);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--radius-card);
+  background: var(--wc-white);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--wc-navy);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.teamChipFollowed {
+  border-color: var(--wc-purple);
+  background: var(--wc-purple-soft);
+  color: var(--wc-purple);
+}
+
+.skeletonHero {
+  height: 2.75rem;
+  border-radius: var(--radius-banner);
+  background: linear-gradient(
+    90deg,
+    var(--wc-border) 0%,
+    rgba(107, 32, 200, 0.08) 50%,
+    var(--wc-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: hubShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skeletonSectionTitle {
+  height: 1rem;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--wc-border);
+  animation: hubShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonCard {
+  height: 5rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    90deg,
+    var(--wc-border) 0%,
+    rgba(107, 32, 200, 0.08) 50%,
+    var(--wc-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: hubShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes hubShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

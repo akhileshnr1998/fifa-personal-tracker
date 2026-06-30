@@ -19,5 +19,6 @@ import { StandingsService } from './standings.service';
   ],
   controllers: [StandingsController],
   providers: [StandingsService, StandingsSyncService],
+  exports: [StandingsService],
 })
 export class StandingsModule {}
