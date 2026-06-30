@@ -1,44 +1,55 @@
-# FIFA World Cup 2026 Fixtures & PWA Notification App
+#  FIFA World Cup 2026 Fixtures & PWA Notification App
+
 ## Technical Project Blueprint & Action Plan
 
 This document serves as the complete technical architecture and execution roadmap for building and deploying a lightweight, production-ready FIFA World Cup 2026 tournament web application. Delivery is **phased**: **Phase 1 ships only day-wise fixtures**—the simplest, highest-value view. The frontend and API are built as a **widget platform** from day one so Hub, Livescore, Bracket, Teams, and Live Standings modules can be plugged in later without rewrites. Notification **Settings** (team follows, push, SMS) are a later phase—built on the same extensible shell.
 
 ---
 
+
+
 ## Implementation Status Tracker
 
 > **How to use:** Check off items as they ship. Change `[ ]` → `[x]` for a completed item.  
-> **Last updated:** 2026-06-12 — Phase 8 added: Match Summary on-demand fetch with status + idempotency guards
+> **Last updated:** 2026-06-30 — Phase 8 marked code complete (match summary API + drawer)
+
+
 
 ### Phase overview
 
-| Phase | Scope | Status |
-| :--- | :--- | :--- |
-| **1** | Day-wise Fixtures (MVP) | `[x]` Code complete — deploy pending |
-| **2** | Hub Widget | `[ ]` Not started |
-| **3** | Livescore Widget | `[ ]` Not started |
-| **4** | Bracket Widget | `[ ]` Not started |
-| **5** | Teams Widget | `[ ]` Not started |
-| **6** | Live Standings Widget | `[x]` Code complete — deploy pending |
-| **7** | Settings + Notifications | `[x]` Code complete — deploy pending |
-| **7.1** | Reminder timing preference | `[x]` Code complete — deploy pending |
-| **8** | Match Summary (post-match detail) | `[ ]` In progress |
+
+| Phase   | Scope                             | Status                               |
+| ------- | --------------------------------- | ------------------------------------ |
+| **1**   | Day-wise Fixtures (MVP)           | `[x]` Code complete — deploy pending |
+| **2**   | Hub Widget                        | `[ ]` Not started                    |
+| **3**   | Livescore Widget                  | `[ ]` Not started                    |
+| **4**   | Bracket Widget                    | `[ ]` Not started                    |
+| **5**   | Teams Widget                      | `[ ]` Not started                    |
+| **6**   | Live Standings Widget             | `[x]` Code complete — deploy pending |
+| **7**   | Settings + Notifications          | `[x]` Code complete — deploy pending |
+| **7.1** | Reminder timing preference        | `[x]` Code complete — deploy pending |
+| **8**   | Match Summary (post-match detail) | `[x]` Code complete — deploy pending |
+
 
 ---
 
+
+
 ### Infrastructure & DevOps
 
-- [ ] Neon.tech Postgres cluster provisioned _(manual — see README)_
+- [ ] Neon.tech Postgres cluster provisioned *(manual — see README)*
 - [x] `fixtures` table managed via TypeORM entity + migration
 - [x] `teams` table — normalized participants referenced by ID across fixtures and notifications
 - [x] `venues` table — normalized stadiums referenced by `fixtures.venue_id`
 - [x] NestJS API project scaffolded (Render-ready)
 - [x] TypeORM configured with Neon connection and versioned migrations
-- [x] ESPN public scoreboard hydration _(no API key — see `docs/espn_api_signatures.md`)_
+- [x] ESPN public scoreboard hydration *(no API key — see* `docs/espn_api_signatures.md`*)*
 - [x] Vite + React frontend scaffolded
 - [ ] Frontend deployed (Vercel / Netlify)
 - [ ] Backend deployed (Render)
 - [ ] End-to-end smoke test (app loads → fixtures visible)
+
+
 
 ### Production Hardening (2026-06-12)
 
@@ -50,6 +61,8 @@ This document serves as the complete technical architecture and execution roadma
 - [x] **F6** — Dispatch record inserted (`ON CONFLICT DO NOTHING RETURNING`) before push fires; push failure rolls back the record so the next cron cycle can retry
 - [x] **F7** — Cron endpoint relocated from `POST /api/fixtures/check-reminders` → `POST /api/notifications/check-reminders`
 - [x] **F8** — `@nestjs/throttler` installed; global 30 req/min guard; `GET /api/fixtures` overridden to 20 req/min to protect the ESPN sync path
+
+
 
 ### Security & Quality Sprint (2026-06-12)
 
@@ -63,6 +76,8 @@ This document serves as the complete technical architecture and execution roadma
 - [x] **S8** — `SettingsPage.tsx` decomposed from 236 lines into `hooks/useTeamOptions.ts`, `hooks/useSettingsForm.ts`, `TeamSelectorSection.tsx`, `PushNotificationsSection.tsx`; page shell is now ~75 lines
 
 ---
+
+
 
 ### Phase 1 — MVP: Day-Wise Fixtures
 
@@ -82,7 +97,7 @@ This document serves as the complete technical architecture and execution roadma
 - [x] Only Fixtures widget registered (no extra nav tabs)
 - [x] Phase 1 header: title + **Settings (⚙️)** dropdown button (contains **Refresh**; **Notify** option appears from Phase 7)
 
-**Frontend — Fixtures widget (`src/widgets/fixtures/`)**
+**Frontend — Fixtures widget (**`src/widgets/fixtures/`**)**
 
 - [x] `useFixtures()` hook — fetches `GET /api/fixtures`
 - [x] Skeleton loader during API cold start
@@ -94,9 +109,11 @@ This document serves as the complete technical architecture and execution roadma
 
 **Phase 1 complete**
 
-- [ ] **Phase 1 signed off** — day-wise schedule live in production _(pending Neon + Render + Vercel deploy)_
+- [ ] **Phase 1 signed off** — day-wise schedule live in production *(pending Neon + Render + Vercel deploy)*
 
 ---
+
+
 
 ### Phase 2 — Hub Widget
 
@@ -112,12 +129,14 @@ This document serves as the complete technical architecture and execution roadma
 
 ---
 
+
+
 ### Phase 3 — Livescore Widget
 
 - [ ] Livescore DB tables / schema
 - [ ] `GET /api/livescore` endpoint
 - [ ] `GET /api/livescore/:fixtureId` endpoint
-- [ ] _Deferred — post-match scores live on fixtures via ESPN refresh; no live polling_
+- [ ] *Deferred — post-match scores live on fixtures via ESPN refresh; no live polling*
 - [ ] `src/widgets/livescore/` — real-time score cards
 - [ ] Minute-by-minute event timeline
 - [ ] Mobile-optimized layout
@@ -126,10 +145,12 @@ This document serves as the complete technical architecture and execution roadma
 
 ---
 
+
+
 ### Phase 4 — Bracket Widget
 
-- [ ] Bracket DB tables / schema _(deferred — client-side derivation from fixtures)_
-- [ ] `GET /api/bracket` endpoint _(deferred — Hub widget only)_
+- [ ] Bracket DB tables / schema *(deferred — client-side derivation from fixtures)*
+- [ ] `GET /api/bracket` endpoint *(deferred — Hub widget only)*
 - [x] ESPN or local `fixtures` bracket derivation (`buildBracketTree` + `bracketTopology`)
 - [x] `src/widgets/bracket/` — visual knockout tree
 - [x] Auto-refresh when matches complete (via existing `FixturesRefreshContext`)
@@ -137,6 +158,8 @@ This document serves as the complete technical architecture and execution roadma
 - [ ] **Phase 4 signed off**
 
 ---
+
+
 
 ### Phase 5 — Teams Widget
 
@@ -151,13 +174,15 @@ This document serves as the complete technical architecture and execution roadma
 
 ---
 
+
+
 ### Phase 6 — Live Standings Widget
 
 **Database**
 
 - [x] `tournament_groups` table migration authored (`1749530000000-CreateTournamentGroupsTable.ts`)
 - [x] `group_standings` table migration authored (`1749530100000-CreateGroupStandingsTable.ts`)
-- [ ] Migrations applied in Neon _(run `npm run migration:run` before deploy)_
+- [ ] Migrations applied in Neon *(run* `npm run migration:run` *before deploy)*
 
 **Backend**
 
@@ -167,7 +192,7 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `GET /api/standings/groups` endpoint (same hydration pattern as fixtures)
 - [x] `StandingsModule` registered in `AppModule`
 - [x] New entities registered in `typeorm.options.ts`
-- [ ] `GET /api/standings/knockout` endpoint _(deferred — group stage only for now)_
+- [ ] `GET /api/standings/knockout` endpoint *(deferred — group stage only for now)*
 
 **Frontend**
 
@@ -187,6 +212,8 @@ This document serves as the complete technical architecture and execution roadma
 
 ---
 
+
+
 ### Phase 7 — Settings & Notifications
 
 **Database**
@@ -194,26 +221,26 @@ This document serves as the complete technical architecture and execution roadma
 - [x] `users` table migration authored
 - [x] `followed_teams` table migration authored
 - [x] `reminder_dispatches` dedupe table migration authored
-- [ ] Migrations applied in Neon _(run `npm run migration:run` before deploy)_
+- [ ] Migrations applied in Neon *(run* `npm run migration:run` *before deploy)*
 
 **Backend**
 
 - [x] `GET /api/teams/names` — Settings team picker
 - [x] `PUT /api/user/settings` — save profile + preferences
 - [x] `GET /api/user/vapid-public-key` — client push subscription
-- [ ] VAPID keys generated and configured in `api/.env` _(manual)_
+- [ ] VAPID keys generated and configured in `api/.env` *(manual)*
 - [x] Web Push dispatch on reminder cron (batch queries, atomic dispatch — see Production Hardening F5/F6)
-- [ ] ~~Twilio SMS integration~~ _(deferred — Web Push only, $0 cost)_
+- [ ] ~~Twilio SMS integration~~ *(deferred — Web Push only, $0 cost)*
 - [x] `POST /api/notifications/check-reminders` endpoint (protected by `X-Cron-Secret`)
 
-**Frontend — Settings (`src/features/settings/`)**
+**Frontend — Settings (**`src/features/settings/`**)**
 
 - [x] Settings route `/settings`
 - [x] Settings gear in app shell header as a dropdown (contains **Refresh** + **Notify** options)
 - [x] Name input (`userName`)
 - [x] Team multi-select with search (from `GET /api/teams/names`)
 - [x] Push notifications toggle + browser permission flow
-- [ ] ~~SMS toggle + phone number input~~ _(deferred — Web Push only)_
+- [ ] ~~SMS toggle + phone number input~~ *(deferred — Web Push only)*
 - [x] Save button → `PUT /api/user/settings` + toast
 - [x] Preferences cached in `localStorage`
 - [x] iOS Add-to-Home-Screen helper for push opt-in
@@ -229,9 +256,11 @@ This document serves as the complete technical architecture and execution roadma
 
 - [x] Followed-team highlight on match cards
 
-- [ ] **Phase 7 signed off** — notifications live in production _(pending migration + deploy + VAPID + cron)_
+- [ ] **Phase 7 signed off** — notifications live in production *(pending migration + deploy + VAPID + cron)*
 
 ---
+
+
 
 ### Phase 7.1 — Reminder Timing Preference
 
@@ -241,7 +270,7 @@ Users choose **how far ahead of kickoff** they receive a push alert. Default is 
 
 - [x] `users.reminder_minutes_before` column (`INT NOT NULL DEFAULT 5`)
 - [x] Migration authored (`1749523500000-AddReminderMinutesBefore.ts`)
-- [ ] Migration applied in Neon _(run `npm run migration:run` before deploy)_
+- [ ] Migration applied in Neon *(run* `npm run migration:run` *before deploy)*
 
 **Backend**
 
@@ -251,7 +280,7 @@ Users choose **how far ahead of kickoff** they receive a push alert. Default is 
 - [x] Push body reflects chosen lead time (e.g. *"kicks off in ~5 minutes"* vs *"about 1 day"*)
 - [x] Unit tests for preset validation + per-bucket dispatch + dedupe
 
-**Frontend — Settings (`src/features/settings/`)**
+**Frontend — Settings (**`src/features/settings/`**)**
 
 - [x] **When to notify** control (visible when push toggle is on)
 - [x] Preset picker with human labels (default selected: **5 minutes before**)
@@ -260,15 +289,18 @@ Users choose **how far ahead of kickoff** they receive a push alert. Default is 
 
 **Presets (product contract)**
 
-| UI label | `reminderMinutesBefore` | Use case |
-| :--- | :--- | :--- |
-| 5 minutes before *(default)* | `5` | Last-minute heads-up |
-| 15 minutes before | `15` | Time to open the app |
-| 1 hour before | `60` | Plan viewing around the match |
-| 3 hours before | `180` | Afternoon/evening schedule check |
-| 1 day before | `1440` | Calendar-style reminder |
 
-- [ ] **Phase 7.1 signed off** — timing preference live in production _(pending migration + deploy)_
+| UI label                     | `reminderMinutesBefore` | Use case                         |
+| ---------------------------- | ----------------------- | -------------------------------- |
+| 5 minutes before *(default)* | `5`                     | Last-minute heads-up             |
+| 15 minutes before            | `15`                    | Time to open the app             |
+| 1 hour before                | `60`                    | Plan viewing around the match    |
+| 3 hours before               | `180`                   | Afternoon/evening schedule check |
+| 1 day before                 | `1440`                  | Calendar-style reminder          |
+
+
+- [ ] **Phase 7.1 signed off** — timing preference live in production *(pending migration + deploy)*
+
 
 
 ### Phase 8 — Match Summary (Post-Match Detail)
@@ -280,42 +312,57 @@ Fetch rich post-match data (goal scorers, cards, match stats) from ESPN's per-ev
 
 **Database**
 
-- [ ] `fixtures.summary_fetched` column (`BOOLEAN NOT NULL DEFAULT FALSE`) — idempotency flag (migration `1749650000000`)
-- [ ] `match_events` table — goals, cards, penalties with player name, minute, team (migration `1749650100000`)
-- [ ] `match_stats` table — per-team stats (possession %, shots, corners, fouls, saves, cards, offsides) with UNIQUE(`fixture_id`, `team_id`) (migration `1749650200000`)
-- [ ] Migrations applied in Neon
+- [x] `fixtures.summary_fetched` column (`BOOLEAN NOT NULL DEFAULT FALSE`) — idempotency flag (migration `1749650000000`)
+- [x] `match_events` table — goals, cards, penalties with player name, minute, team (migrations `1749650100000`, `1749750200000` for shootout shot numbers)
+- [x] `match_stats` table — per-team stats (possession %, shots, corners, fouls, saves, cards, offsides) with UNIQUE(`fixture_id`, `team_id`) (migration `1749650200000`)
+- [ ] Migrations applied in Neon *(pending production deploy)*
 
 **Backend**
 
-- [ ] `MatchEventEntity` + `MatchStatEntity` TypeORM entities
-- [ ] `MatchSummaryService` — applies both guards, fetches ESPN `/summary?event={id}`, stores events + stats, flips `summary_fetched`; all in a single DB transaction
-- [ ] `GET /api/fixtures/:id/summary` — returns `{ available: false }` for unfinished / future matches; returns cached data after first fetch
-- [ ] `MatchSummaryModule` registered in `AppModule`
-- [ ] New entities registered in `typeorm.options.ts`
+- [x] `MatchEventEntity` + `MatchStatEntity` TypeORM entities
+- [x] `MatchSummaryService` — applies both guards, fetches ESPN `/summary?event={id}`, stores events + stats, flips `summary_fetched`; all in a single DB transaction
+- [x] `GET /api/fixtures/:id/summary` — returns `{ available: false }` for unfinished / future matches; returns cached data after first fetch
+- [x] `MatchSummaryModule` registered in `AppModule`
+- [x] New entities registered in `typeorm.options.ts`
+
+**Frontend — Fixtures + Bracket (**`src/widgets/fixtures/`**, reused in Bracket)**
+
+- [x] `useMatchSummary()` hook — fetches `GET /api/fixtures/:id/summary` on demand
+- [x] `MatchSummaryDrawer` — goals, cards, stats, penalty shootout timeline
+- [x] Tap finished match on Fixtures list → opens drawer
+- [x] Tap finished match on Bracket node → opens drawer (same component)
 
 **ESPN source:**
+
 ```
 GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event={espn_event_id}
 ```
+
 No API key required. Event ID is already stored as `fixtures.id`.
 
-- [ ] **Phase 8 signed off**
+- [ ] **Phase 8 signed off** — match summary live in production *(pending migration + deploy)*
 
 ---
+
+
 
 ## 1. Cloud Infrastructure & Cost Management
 
 To host this application completely free of charge while ensuring production stability, we leverage a distributed serverless and micro-container stack.
 
-| Component | Provider | Tier Details | Role / Constraints Strategy |
-| :--- | :--- | :--- | :--- |
-| **Frontend** | **Vercel** or **Netlify** | Hobby Tier (Always Free) | Hosts the compiled Vite + TypeScript SPA and static assets. Provides edge CDN performance with $0 overhead. |
-| **Backend API** | **Render** | Web Services Free Tier | Hosts the NestJS API engine. Note: Spinning down happens after 15 minutes of inactivity (cold start). Safe handle via frontend loader. |
-| **Database** | **Neon.tech** | Serverless Postgres Free | Provides 3 GiB of storage and shared compute, fully compatible with Postgres 15/16. Ideal for light relational operations. |
-| **Push Channel** | **W3C Web Push / VAPID** | Native Browser Specs | Free delivery via Apple Push Notification service (APNs) and Google FCM. Enabled from Settings when the user opts in. |
-| **SMS Channel** | **Twilio** (or similar) | Pay-as-you-go / trial credits | Optional. Sends text alerts to the phone number saved in Settings. Only dispatched for users who explicitly enable SMS. |
+
+| Component        | Provider                  | Tier Details                  | Role / Constraints Strategy                                                                                                            |
+| ---------------- | ------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend**     | **Vercel** or **Netlify** | Hobby Tier (Always Free)      | Hosts the compiled Vite + TypeScript SPA and static assets. Provides edge CDN performance with $0 overhead.                            |
+| **Backend API**  | **Render**                | Web Services Free Tier        | Hosts the NestJS API engine. Note: Spinning down happens after 15 minutes of inactivity (cold start). Safe handle via frontend loader. |
+| **Database**     | **Neon.tech**             | Serverless Postgres Free      | Provides 3 GiB of storage and shared compute, fully compatible with Postgres 15/16. Ideal for light relational operations.             |
+| **Push Channel** | **W3C Web Push / VAPID**  | Native Browser Specs          | Free delivery via Apple Push Notification service (APNs) and Google FCM. Enabled from Settings when the user opts in.                  |
+| **SMS Channel**  | **Twilio** (or similar)   | Pay-as-you-go / trial credits | Optional. Sends text alerts to the phone number saved in Settings. Only dispatched for users who explicitly enable SMS.                |
+
 
 ---
+
+
 
 ## 2. System Architecture & Core Workflows
 
@@ -344,17 +391,21 @@ The application utilizes an **On-Demand Hydration Strategy** to keep operations 
                         +--------------+   +-------------------------+
 ```
 
+
+
 ### B. Phased Delivery Model
 
-| Phase | Scope | User-facing outcome |
-| :--- | :--- | :--- |
-| **Phase 1 (MVP)** | **Fixtures Widget only** | Day-wise match schedule; no other tabs, no Settings |
-| Phase 2 | Hub Widget | Unified tournament dashboard combining multiple widgets |
-| Phase 3 | Livescore Widget | Real-time scores and minute-by-minute events |
-| Phase 4 | Bracket Widget | Visual knockout tree, auto-updating |
-| Phase 5 | Teams Widget | 48-team squad rosters and player profiles |
-| Phase 6 | Live Standings Widget | Live group tables + bracket progression |
-| Phase 7 | Settings + Notifications | Team follows, push alerts, SMS opt-in |
+
+| Phase             | Scope                    | User-facing outcome                                     |
+| ----------------- | ------------------------ | ------------------------------------------------------- |
+| **Phase 1 (MVP)** | **Fixtures Widget only** | Day-wise match schedule; no other tabs, no Settings     |
+| Phase 2           | Hub Widget               | Unified tournament dashboard combining multiple widgets |
+| Phase 3           | Livescore Widget         | Real-time scores and minute-by-minute events            |
+| Phase 4           | Bracket Widget           | Visual knockout tree, auto-updating                     |
+| Phase 5           | Teams Widget             | 48-team squad rosters and player profiles               |
+| Phase 6           | Live Standings Widget    | Live group tables + bracket progression                 |
+| Phase 7           | Settings + Notifications | Team follows, push alerts, SMS opt-in                   |
+
 
 Phase 1 intentionally does **one thing well**. Every later phase adds a self-contained widget module registered into the same app shell—no monolithic page rewrites.
 
@@ -419,17 +470,21 @@ src/
     settings/      Phase 7 — notification preferences
 ```
 
+
+
 ### D. Future Widget Catalog
 
 Widgets to add after Phase 1. Each is a standalone module the Hub can embed or that gets its own nav tab.
 
-| Widget | What visitors see | Why add it |
-| :--- | :--- | :--- |
-| **Hub** | Fixtures, group standings, knockout bracket, top scorers, and team profiles in one scrollable view | Full tournament picture without leaving the site |
-| **Livescore** | Real-time match scores with minute-by-minute events; mobile-friendly | Live data on-page—no redirect to external score sites |
-| **Bracket** | Visual tournament bracket for World Cup 2026; auto-updates as matches finish | Visitors follow knockout progression in-place |
-| **Teams** | Full squad overviews for all 48 national teams—player profiles, positions, stats | Rosters to browse before and during the tournament |
-| **Live Standings** | Live group tables as matches play; knockout slots update as teams advance | Standings and bracket progression without a separate page |
+
+| Widget             | What visitors see                                                                                  | Why add it                                                |
+| ------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Hub**            | Fixtures, group standings, knockout bracket, top scorers, and team profiles in one scrollable view | Full tournament picture without leaving the site          |
+| **Livescore**      | Real-time match scores with minute-by-minute events; mobile-friendly                               | Live data on-page—no redirect to external score sites     |
+| **Bracket**        | Visual tournament bracket for World Cup 2026; auto-updates as matches finish                       | Visitors follow knockout progression in-place             |
+| **Teams**          | Full squad overviews for all 48 national teams—player profiles, positions, stats                   | Rosters to browse before and during the tournament        |
+| **Live Standings** | Live group tables as matches play; knockout slots update as teams advance                          | Standings and bracket progression without a separate page |
+
 
 The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions of other widgets and does not duplicate data logic.
 
@@ -467,18 +522,23 @@ The **Hub Widget** (Phase 2) is a layout composer—it renders compact versions 
 3. **Settings (Phase 7):** Notification preferences are opt-in on a separate screen. Unconfigured users still see all tournament content.
 4. **Reminder timing (Phase 7.1):** when push is on, user picks how far ahead to be alerted (default 5 min; up to 1 day). Cron fires one push per followed match at that offset.
 
+
+
 ### F. Setup / Data Hydration Workflow
+
 1. **User Request:** A user loads the frontend. The SPA dispatches a request to `GET /api/fixtures`.
 2. **Database Verification:** The backend checks the database state (`SELECT COUNT(*)`).
 3. **Dynamic Fetch Condition:**
-   * **If Database is Empty:** The backend intercepts execution, issues one outbound request to the **ESPN public scoreboard** (`fifa.world`), normalizes all 104 fixtures (including knockout placeholders like "Group E Winner"), upserts them to Postgres, and streams down the dataset.
-   * **If Database Contains Rows:** The backend bypasses ESPN entirely, sourcing the response natively from Postgres.
-   * **If User Taps Refresh (`?refresh=true`):** Re-fetch ESPN to update final scores and resolved knockout team names.
+  - **If Database is Empty:** The backend intercepts execution, issues one outbound request to the **ESPN public scoreboard** (`fifa.world`), normalizes all 104 fixtures (including knockout placeholders like "Group E Winner"), upserts them to Postgres, and streams down the dataset.
+  - **If Database Contains Rows:** The backend bypasses ESPN entirely, sourcing the response natively from Postgres.
+  - **If User Taps Refresh (**`?refresh=true`**):** Re-fetch ESPN to update final scores and resolved knockout team names.
 4. **Concurrent cold-start protection:** An in-flight `syncPromise` guard in `FixturesService` and `StandingsService` ensures that concurrent requests during a Render cold start all await the same ESPN fetch — no duplicate outbound calls.
 5. **Rate limiting:** `GET /api/fixtures` is throttled to **20 requests/min per IP** (global default: 30/min). Prevents ESPN API exhaustion and Render compute saturation from refresh spam.
 6. **Manual Re-Sync Action:** `GET /api/fixtures?refresh=true` updates scores and bracket progression. To test a full fresh lifecycle, drop/reset the database, run migrations, and open the app.
 
 ---
+
+
 
 ## 3. Database Schema Design (PostgreSQL + TypeORM)
 
@@ -496,44 +556,50 @@ On Render, migrations run automatically during the build step.
 
 ### Phase 1 — `TeamEntity` (`api/src/teams/entities/team.entity.ts`)
 
-| Column | Type | Notes |
-| :--- | :--- | :--- |
-| `id` | `INT` PK | ESPN `team.id` when available; synthetic negative id for placeholders; `0` = `TBD` |
-| `name` | `VARCHAR(150)` UNIQUE | Display label (e.g. `Mexico`, `Group E Winner`) |
-| `is_placeholder` | `BOOLEAN` | `true` for knockout slots — excluded from Settings picker |
-| `espn_team_id` | `INT` nullable | Original ESPN id for real nations |
-| `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
+
+| Column           | Type                  | Notes                                                                              |
+| ---------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| `id`             | `INT` PK              | ESPN `team.id` when available; synthetic negative id for placeholders; `0` = `TBD` |
+| `name`           | `VARCHAR(150)` UNIQUE | Display label (e.g. `Mexico`, `Group E Winner`)                                    |
+| `is_placeholder` | `BOOLEAN`             | `true` for knockout slots — excluded from Settings picker                          |
+| `espn_team_id`   | `INT` nullable        | Original ESPN id for real nations                                                  |
+| `updated_at`     | `TIMESTAMPTZ`         | Auto-maintained                                                                    |
+
 
 Migration: `1749523700000-CreateTeamsTable.ts` (seeds `id=0` / `TBD`).
 
 ### Phase 1 — `VenueEntity` (`api/src/venues/entities/venue.entity.ts`)
 
-| Column | Type | Notes |
-| :--- | :--- | :--- |
-| `id` | `INT` PK | ESPN `venue.id` when available; synthetic negative id otherwise; `0` = `TBD` |
-| `name` | `VARCHAR(150)` UNIQUE | Stadium name (e.g. `Estadio Banorte`) |
-| `city` | `VARCHAR(100)` nullable | From ESPN `address.city` |
-| `country` | `VARCHAR(100)` nullable | From ESPN `address.country` |
-| `espn_venue_id` | `INT` nullable | Original ESPN id |
-| `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
+
+| Column          | Type                    | Notes                                                                        |
+| --------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `id`            | `INT` PK                | ESPN `venue.id` when available; synthetic negative id otherwise; `0` = `TBD` |
+| `name`          | `VARCHAR(150)` UNIQUE   | Stadium name (e.g. `Estadio Banorte`)                                        |
+| `city`          | `VARCHAR(100)` nullable | From ESPN `address.city`                                                     |
+| `country`       | `VARCHAR(100)` nullable | From ESPN `address.country`                                                  |
+| `espn_venue_id` | `INT` nullable          | Original ESPN id                                                             |
+| `updated_at`    | `TIMESTAMPTZ`           | Auto-maintained                                                              |
+
 
 Migrations: `1749524000000-CreateVenuesTable.ts`, `1749524100000-NormalizeFixtureVenueReferences.ts`.
 
 ### Phase 1 — `FixtureEntity` (`api/src/fixtures/entities/fixture.entity.ts`)
 
-| Column | Type | Notes |
-| :--- | :--- | :--- |
-| `id` | `INT` PK | ESPN event ID |
-| `match_number` | `INT` nullable | Chronological index 1–104 from ESPN sync |
-| `match_date_time` | `TIMESTAMPTZ` | Indexed (`idx_fixtures_date`) |
-| `stage_id` | `INT` | Group stage vs knockout round |
-| `home_team_id` | `INT` FK → `teams` | Indexed (`idx_fixtures_home_team_id`) |
-| `away_team_id` | `INT` FK → `teams` | Indexed (`idx_fixtures_away_team_id`) |
-| `venue_id` | `INT` FK → `venues` | Indexed (`idx_fixtures_venue_id`) |
-| `status` | `VARCHAR(20)` | `scheduled`, `finished`, or `postponed` |
-| `home_score` | `INT` nullable | Final home goals (null until finished) |
-| `away_score` | `INT` nullable | Final away goals (null until finished) |
-| `updated_at` | `TIMESTAMPTZ` | Auto-maintained |
+
+| Column            | Type                | Notes                                    |
+| ----------------- | ------------------- | ---------------------------------------- |
+| `id`              | `INT` PK            | ESPN event ID                            |
+| `match_number`    | `INT` nullable      | Chronological index 1–104 from ESPN sync |
+| `match_date_time` | `TIMESTAMPTZ`       | Indexed (`idx_fixtures_date`)            |
+| `stage_id`        | `INT`               | Group stage vs knockout round            |
+| `home_team_id`    | `INT` FK → `teams`  | Indexed (`idx_fixtures_home_team_id`)    |
+| `away_team_id`    | `INT` FK → `teams`  | Indexed (`idx_fixtures_away_team_id`)    |
+| `venue_id`        | `INT` FK → `venues` | Indexed (`idx_fixtures_venue_id`)        |
+| `status`          | `VARCHAR(20)`       | `scheduled`, `finished`, or `postponed`  |
+| `home_score`      | `INT` nullable      | Final home goals (null until finished)   |
+| `away_score`      | `INT` nullable      | Final away goals (null until finished)   |
+| `updated_at`      | `TIMESTAMPTZ`       | Auto-maintained                          |
+
 
 Migrations: `1749523200000-CreateFixturesTable.ts` (base), `1749523800000-NormalizeFixtureTeamReferences.ts` (FK columns).  
 Scores: `1749523600000-AddFixtureScores.ts`.  
@@ -575,16 +641,22 @@ Seed migration `1749523300000-SeedWorldCup2026Fixtures` is a **no-op** — teams
 
 ---
 
+
+
 ## 4. API Endpoints Signature Matrix
 
 All API inputs/outputs adopt standard REST communication structures using strict JSON contracts. Endpoints are grouped by **widget domain** so each phase adds a module without touching existing routes.
 
 ### Phase 1 — Fixtures Widget (MVP)
 
+
+
 #### 1. Retrieve Match Records
-* **Endpoint:** `GET /api/fixtures`
-* **Description:** Returns the global list of fixtures sorted chronologically. Automatically handles seeding if Postgres tables report zero records.
-* **Response Payload (`200 OK`):**
+
+- **Endpoint:** `GET /api/fixtures`
+- **Description:** Returns the global list of fixtures sorted chronologically. Automatically handles seeding if Postgres tables report zero records.
+- **Response Payload (**`200 OK`**):**
+
 ```json
 [
   {
@@ -602,24 +674,32 @@ All API inputs/outputs adopt standard REST communication structures using strict
 ]
 ```
 
+
+
 ### Phase 2–6 — Future Widget APIs (stub; implement when widget ships)
 
-| Widget | Planned endpoints | Data source |
-| :--- | :--- | :--- |
-| **Hub** | `GET /api/hub` — aggregated snapshot for dashboard | Composes responses from fixtures, standings, bracket, scorers, teams |
-| **Livescore** | _Deferred_ | Post-match scores on `GET /api/fixtures` via ESPN refresh |
-| **Bracket** | `GET /api/bracket` | ESPN schedule or local `fixtures` derivation |
-| **Teams** | `GET /api/teams`, `GET /api/teams/:id/squad` | ESPN teams/roster endpoints |
-| **Live Standings** | `GET /api/standings/groups` ✅ · `GET /api/standings/knockout` _(deferred)_ | ESPN `/apis/v2/sports/soccer/fifa.world/standings` — on-demand hydration |
 
-Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from ESPN and upsert when empty or on refresh. See [`docs/espn_api_signatures.md`](./espn_api_signatures.md).
+| Widget             | Planned endpoints                                                          | Data source                                                              |
+| ------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Hub**            | `GET /api/hub` — aggregated snapshot for dashboard                         | Composes responses from fixtures, standings, bracket, scorers, teams     |
+| **Livescore**      | *Deferred*                                                                 | Post-match scores on `GET /api/fixtures` via ESPN refresh                |
+| **Bracket**        | `GET /api/bracket`                                                         | ESPN schedule or local `fixtures` derivation                             |
+| **Teams**          | `GET /api/teams`, `GET /api/teams/:id/squad`                               | ESPN teams/roster endpoints                                              |
+| **Live Standings** | `GET /api/standings/groups` ✅ · `GET /api/standings/knockout` *(deferred)* | ESPN `/apis/v2/sports/soccer/fifa.world/standings` — on-demand hydration |
+
+
+Each endpoint follows the same **on-demand hydration** pattern as fixtures: serve from Postgres when fresh, fetch from ESPN and upsert when empty or on refresh. See `[docs/espn_api_signatures.md](./espn_api_signatures.md)`.
 
 ### Phase 7 — Settings & Notifications
 
+
+
 #### 2. List Teams (Settings Team Picker)
-* **Endpoint:** `GET /api/teams/names`
-* **Description:** Returns followable teams from the `teams` table (`is_placeholder = false`), sorted by name. Powers the Settings multi-select. *(Distinct from future `GET /api/teams` which returns full team profiles in Phase 5.)*
-* **Response Payload (`200 OK`):**
+
+- **Endpoint:** `GET /api/teams/names`
+- **Description:** Returns followable teams from the `teams` table (`is_placeholder = false`), sorted by name. Powers the Settings multi-select. *(Distinct from future* `GET /api/teams` *which returns full team profiles in Phase 5.)*
+- **Response Payload (**`200 OK`**):**
+
 ```json
 [
   { "id": 10, "name": "Argentina" },
@@ -627,11 +707,15 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 ]
 ```
 
+
+
 #### 3. Save User Settings (Notifications Opt-In)
-* **Endpoint:** `PUT /api/user/settings`
-* **Description:** Called from the Settings screen when the user taps **Save**. Upserts profile and notification preferences. Fields are optional except `userName` and `teams` (teams may be an empty array if the user clears all follows).
-* **Validation:** All fields are validated by `class-validator` via the global `ValidationPipe`. Unknown fields are stripped (`whitelist: true`). Invalid payloads return `400 Bad Request` before reaching the service layer.
-* **Request Body Layout:**
+
+- **Endpoint:** `PUT /api/user/settings`
+- **Description:** Called from the Settings screen when the user taps **Save**. Upserts profile and notification preferences. Fields are optional except `userName` and `teams` (teams may be an empty array if the user clears all follows).
+- **Validation:** All fields are validated by `class-validator` via the global `ValidationPipe`. Unknown fields are stripped (`whitelist: true`). Invalid payloads return `400 Bad Request` before reaching the service layer.
+- **Request Body Layout:**
+
 ```json
 {
   "userName": "Akhilesh",
@@ -648,11 +732,13 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
   }
 }
 ```
-* **Notes:**
-  * Omit `subscription` (or send `null`) when `pushNotificationsEnabled` is `false`.
-  * `reminderMinutesBefore` — preset minutes before kickoff. Allowed values: `5` (default), `15`, `60`, `180`, `1440`. Ignored when push is disabled; server stores default `5`.
-  * The client requests browser notification permission only when the user toggles push on.
-* **Response Payload (`200 OK`):**
+
+- **Notes:**
+  - Omit `subscription` (or send `null`) when `pushNotificationsEnabled` is `false`.
+  - `reminderMinutesBefore` — preset minutes before kickoff. Allowed values: `5` (default), `15`, `60`, `180`, `1440`. Ignored when push is disabled; server stores default `5`.
+  - The client requests browser notification permission only when the user toggles push on.
+- **Response Payload (**`200 OK`**):**
+
 ```json
 {
   "success": true,
@@ -660,19 +746,23 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 }
 ```
 
+
+
 #### 4. Match Alert Dispatched Query (Automated Task Input)
-* **Endpoint:** `POST /api/notifications/check-reminders`
-* **Auth:** `X-Cron-Secret` header must match the `CRON_SECRET` env var. Returns `401` otherwise.
-* **Description:** For each user with `push_notifications_enabled = true` and a stored `push_subscription`, finds followed-team fixtures whose kickoff falls inside that user's **personal reminder window**, then dispatches **one Web Push per user per fixture** (deduped via `reminder_dispatches`).
-* **Per-user reminder window (Phase 7.1):**
-  * Let `M` = `users.reminder_minutes_before` (default `5`).
-  * Let `S` = cron slack (12 minutes — covers 10–15 min scheduler interval).
-  * A fixture is due for user `U` when:  
-    `match_date_time` ∈ `[now + M minutes, now + M + S minutes]`
-  * Example: `M = 5` → alert ~5 min before kickoff; `M = 1440` → alert ~1 day before.
-* **Cron efficiency (updated 2026-06-12):** 3 bulk queries per reminder-bucket — one for fixtures in window, one for all eligible users across all fixtures in that bucket, one for all already-dispatched pairs. Joined in memory. Eliminates the previous N+1 pattern (was 2 queries per fixture).
-* **Atomic dedup (updated 2026-06-12):** `reminder_dispatches` row is inserted with `ON CONFLICT DO NOTHING RETURNING user_id` **before** the push fires. If `RETURNING` returns no rows the push is skipped (concurrent cron guard). If the push itself fails, the pre-written record is deleted so the next cron cycle retries delivery.
-* **Response Payload (`200 OK`):**
+
+- **Endpoint:** `POST /api/notifications/check-reminders`
+- **Auth:** `X-Cron-Secret` header must match the `CRON_SECRET` env var. Returns `401` otherwise.
+- **Description:** For each user with `push_notifications_enabled = true` and a stored `push_subscription`, finds followed-team fixtures whose kickoff falls inside that user's **personal reminder window**, then dispatches **one Web Push per user per fixture** (deduped via `reminder_dispatches`).
+- **Per-user reminder window (Phase 7.1):**
+  - Let `M` = `users.reminder_minutes_before` (default `5`).
+  - Let `S` = cron slack (12 minutes — covers 10–15 min scheduler interval).
+  - A fixture is due for user `U` when:  
+  `match_date_time` ∈ `[now + M minutes, now + M + S minutes]`
+  - Example: `M = 5` → alert ~5 min before kickoff; `M = 1440` → alert ~1 day before.
+- **Cron efficiency (updated 2026-06-12):** 3 bulk queries per reminder-bucket — one for fixtures in window, one for all eligible users across all fixtures in that bucket, one for all already-dispatched pairs. Joined in memory. Eliminates the previous N+1 pattern (was 2 queries per fixture).
+- **Atomic dedup (updated 2026-06-12):** `reminder_dispatches` row is inserted with `ON CONFLICT DO NOTHING RETURNING user_id` **before** the push fires. If `RETURNING` returns no rows the push is skipped (concurrent cron guard). If the push itself fails, the pre-written record is deleted so the next cron cycle retries delivery.
+- **Response Payload (**`200 OK`**):**
+
 ```json
 {
   "success": true,
@@ -682,6 +772,8 @@ Each endpoint follows the same **on-demand hydration** pattern as fixtures: serv
 
 ---
 
+
+
 ## 5. Frontend UI/UX Design
 
 The interface follows a **widget-first shell** pattern: Phase 1 ships a single Fixtures widget; navigation and Settings grow as later phases register new modules.
@@ -690,23 +782,27 @@ The interface follows a **widget-first shell** pattern: Phase 1 ships a single F
 
 **Phase 1 (MVP):**
 
-| Route | Purpose | Visible |
-| :--- | :--- | :--- |
-| `/` | Day-wise fixtures list | Yes — only screen |
+
+| Route | Purpose                | Visible           |
+| ----- | ---------------------- | ----------------- |
+| `/`   | Day-wise fixtures list | Yes — only screen |
+
 
 No bottom nav, no extra tabs. Header shows title + **⚙️ Settings** dropdown (contains **🔄 Refresh**; no **Notify** option until Phase 7).
 
 **Full product (Phase 2–7):**
 
-| Route / Tab | Widget | Phase |
-| :--- | :--- | :--- |
-| `/` or `/hub` | Hub (or Fixtures until Hub ships) | 2 |
-| `/fixtures` | Fixtures | 1 |
-| `/livescore` | Livescore | 3 |
-| `/bracket` | Bracket | 4 |
-| `/teams` | Teams | 5 |
-| `/standings` | Live Standings | 6 |
-| `/settings` | Notification preferences | 7 |
+
+| Route / Tab   | Widget                            | Phase |
+| ------------- | --------------------------------- | ----- |
+| `/` or `/hub` | Hub (or Fixtures until Hub ships) | 2     |
+| `/fixtures`   | Fixtures                          | 1     |
+| `/livescore`  | Livescore                         | 3     |
+| `/bracket`    | Bracket                           | 4     |
+| `/teams`      | Teams                             | 5     |
+| `/standings`  | Live Standings                    | 6     |
+| `/settings`   | Notification preferences          | 7     |
+
 
 Nav tabs are **generated from the widget registry**—only enabled widgets appear. The header **⚙️ Settings** dropdown is always visible; the **🔔 Notify** option inside it renders only when Phase 7 is active.
 
@@ -714,68 +810,81 @@ Nav tabs are **generated from the widget registry**—only enabled widgets appea
 
 The entire MVP is this widget. Build it as an isolated module under `src/widgets/fixtures/`.
 
-* Loads `GET /api/fixtures` on mount; shows a skeleton loader during cold-start backend spin-up.
-* **Day-wise grouping:** matches clustered under localized date headings (e.g., `Thu, 11 Jun 2026`). Users scroll chronologically through the tournament.
-* **Match card:** match number, kickoff time (local timezone), stage badge, home vs away, venue.
-* **Header refresh (PWA):** **🔄 Refresh** option inside the sticky **⚙️ Settings** dropdown in `Header` — re-fetches `GET /api/fixtures?refresh=true`. Primary control for updated scores on installed home-screen apps.
-* **Empty state:** if the API returns zero rows, show a **Refresh** button (same hydration path as the header control).
-* **Finished matches:** show final score between team names when `status === 'finished'`.
-* **No extras in Phase 1:** no team highlights, no filters, no Settings link, no notification prompts.
+- Loads `GET /api/fixtures` on mount; shows a skeleton loader during cold-start backend spin-up.
+- **Day-wise grouping:** matches clustered under localized date headings (e.g., `Thu, 11 Jun 2026`). Users scroll chronologically through the tournament.
+- **Match card:** match number, kickoff time (local timezone), stage badge, home vs away, venue.
+- **Header refresh (PWA):** **🔄 Refresh** option inside the sticky **⚙️ Settings** dropdown in `Header` — re-fetches `GET /api/fixtures?refresh=true`. Primary control for updated scores on installed home-screen apps.
+- **Empty state:** if the API returns zero rows, show a **Refresh** button (same hydration path as the header control).
+- **Finished matches:** show final score between team names when `status === 'finished'`.
+- **No extras in Phase 1:** no team highlights, no filters, no Settings link, no notification prompts.
 
 **Phase 7 additions** (same widget, incremental):
-* Followed-team highlight on cards when user has saved teams in Settings (`localStorage`).
+
+- Followed-team highlight on cards when user has saved teams in Settings (`localStorage`).
+
+
 
 ### C. Settings Screen (Phase 7 — Opt-In Notifications)
 
 Four clearly separated sections, top to bottom:
 
 **1. Profile**
-* **Name** — text input (`userName`), required to save.
+
+- **Name** — text input (`userName`), required to save.
 
 **2. Teams You Follow**
-* Multi-select checklist populated from `GET /api/teams/names`.
-* Search/filter for long knockout lists.
-* Helper text: *"You'll be notified before these teams kick off."*
-* Applies to **both** push and SMS channels.
+
+- Multi-select checklist populated from `GET /api/teams/names`.
+- Search/filter for long knockout lists.
+- Helper text: *"You'll be notified before these teams kick off."*
+- Applies to **both** push and SMS channels.
 
 **3. Push Notifications**
-* Toggle: **Enable push alerts on this device**
-* On enable: request `Notification.requestPermission()`, register service worker, capture VAPID subscription, include in save payload.
-* On disable: clear `push_subscription` on save; hide timing control.
+
+- Toggle: **Enable push alerts on this device**
+- On enable: request `Notification.requestPermission()`, register service worker, capture VAPID subscription, include in save payload.
+- On disable: clear `push_subscription` on save; hide timing control.
 
 **3b. When to Notify** *(Phase 7.1 — shown only when push is enabled)*
-* Single-select preset list (not free-form — avoids cron edge cases and confusing UX).
-* **Default:** `5 minutes before kickoff`
-* Options: `5 min` · `15 min` · `1 hour` · `3 hours` · `1 day before`
-* Helper text: *"You'll get one alert per followed match at this time."*
-* Maps to `reminderMinutesBefore` in save payload and `localStorage`.
+
+- Single-select preset list (not free-form — avoids cron edge cases and confusing UX).
+- **Default:** `5 minutes before kickoff`
+- Options: `5 min` · `15 min` · `1 hour` · `3 hours` · `1 day before`
+- Helper text: *"You'll get one alert per followed match at this time."*
+- Maps to `reminderMinutesBefore` in save payload and `localStorage`.
 
 **Save button** (sticky footer): validates name, calls `PUT /api/user/settings`, shows toast on success. Preferences mirrored to `localStorage` so followed-team highlights work offline on the Fixtures screen.
 
 ### D. UX Principles
 
-* **Ship small:** Phase 1 is day-wise fixtures only—nothing else in the UI.
-* **Plug, don't rewrite:** each new widget is a new folder + registry entry; Fixtures code stays stable.
-* **Zero gate:** first paint is always tournament content (fixtures in Phase 1; Hub or fixtures in later phases).
-* **Progressive disclosure:** notification controls appear only in Settings (Phase 7).
-* **User-controlled timing:** default last-minute alert (5 min); optional earlier heads-up up to 1 day before (Phase 7.1).
-* **One alert per match:** regardless of lead time, each user receives at most one push per fixture they follow.
-* **Mobile-first widgets:** Livescore, Bracket, and Standings are designed for thumb-friendly layouts from the start.
+- **Ship small:** Phase 1 is day-wise fixtures only—nothing else in the UI.
+- **Plug, don't rewrite:** each new widget is a new folder + registry entry; Fixtures code stays stable.
+- **Zero gate:** first paint is always tournament content (fixtures in Phase 1; Hub or fixtures in later phases).
+- **Progressive disclosure:** notification controls appear only in Settings (Phase 7).
+- **User-controlled timing:** default last-minute alert (5 min); optional earlier heads-up up to 1 day before (Phase 7.1).
+- **One alert per match:** regardless of lead time, each user receives at most one push per fixture they follow.
+- **Mobile-first widgets:** Livescore, Bracket, and Standings are designed for thumb-friendly layouts from the start.
 
 ---
+
+
 
 ## 6. PWA Implementation Architecture
 
 Push alerts use native browser service worker capabilities; SMS is handled server-side via Twilio when enabled in Settings.
 
 ### A. VAPID Key Infrastructure
+
 Generate structural verification coordinates to safely validate handshake patterns between servers and web browser hubs:
+
 ```bash
 npx web-push generate-vapid-keys
 ```
+
 Place them in the NestJS config space (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`).
 
 ### B. Client Service Worker (`public/sw.js`)
+
 This persistent script processes inbound browser event messages in background states.
 
 ```javascript
@@ -803,7 +912,10 @@ self.addEventListener('notificationclick', (event) => {
 });
 ```
 
+
+
 ### C. Web Manifest Entry Requirements (`public/manifest.json`)
+
 Essential for PWA compliance, specifically to enable notification support on modern iOS devices.
 
 ```json
@@ -832,15 +944,21 @@ Essential for PWA compliance, specifically to enable notification support on mod
 
 ---
 
+
+
 ## 7. Project Execution Plan & Milestones
 
 > **Progress:** track completion in the [Implementation Status Tracker](#implementation-status-tracker) at the top of this document.
+
+
 
 ### Phase 1 — MVP: Day-Wise Fixtures (ship this first)
 
 1. **1a. DB + API skeleton** — Spin up **Neon.tech**, run TypeORM migrations (`npm run migration:run`), configure NestJS + TypeORM. Implement ESPN hydration for `GET /api/fixtures` (schedule + final scores).
 2. **1b. Widget shell** — Scaffold Vite + React app with `shell/` (layout, widget registry) and `widgets/fixtures/` (day-grouped list, match cards, Refresh empty state). Register only the Fixtures widget—no nav tabs.
 3. **1c. Deploy** — Push frontend to Vercel/Netlify, API to Render. Verify end-to-end: open app → see day-wise schedule.
+
+
 
 ### Phase 2 — Hub Widget
 
